@@ -11,9 +11,14 @@ try{
   foreach($file in $files){Copy-Item -LiteralPath (Join-Path $source $file) -Destination (Join-Path $testApp $file)}
   $config=@{appDir=$testApp;dataDir=$testData;codexPath='unused-in-preview'}
   [IO.File]::WriteAllText((Join-Path $testApp 'installation.json'),($config|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+  [IO.File]::WriteAllText((Join-Path $testData 'settings.json'),(@{scale=0.8;expressionMode='neutral';hideMenu=$true}|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
   $snapshot=@{ok=$true;queryOk=$true;observedAt=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();windows=@(@{minutes=300;used=25;remaining=75;resetsAt=$null},@{minutes=10080;used=10;remaining=90;resetsAt=$null})}
   [IO.File]::WriteAllText((Join-Path $testData 'status.json'),($snapshot|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))
   $powerShell=Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+  $checked=& $powerShell -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $testApp 'runtime\start-widget.ps1') -WidgetPath (Join-Path $testApp 'widget.ps1') -CheckOnly
+  if($LASTEXITCODE-ne 0){throw 'The startup preference check failed.'}
+  $restored=($checked -join "`n")|ConvertFrom-Json
+  if(!$restored.ok -or [Math]::Abs([double]$restored.scale-0.8)-gt 0.001 -or $restored.expressionMode-ne 'neutral'){throw 'The entry point did not restore saved size and manual expression preferences.'}
   & $powerShell -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $testApp 'runtime\start-widget.ps1') -WidgetPath (Join-Path $testApp 'widget.ps1') -Preview
   if($LASTEXITCODE-ne 0){throw 'The full WPF entry point failed.'}
   $preview=Join-Path $testApp 'preview.png'
@@ -22,13 +27,13 @@ try{
     $null=New-Item -ItemType Directory -Path $PreviewDirectory -Force
     Copy-Item -LiteralPath $preview -Destination (Join-Path $PreviewDirectory 'quota-aligned.png')
   }
-  Write-Output 'PASS: full WPF widget and UTF-8 entry point on Windows PowerShell 5.1'
+  Write-Output 'PASS: full WPF widget, UTF-8 entry point and restored size/manual expression preferences on Windows PowerShell 5.1'
 }finally{
   $resolved=[IO.Path]::GetFullPath($testRoot)
   $prefix=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\'
   if(!$resolved.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetFileName($resolved)-notlike 'gpt-niang-entrypoint-*'){throw 'Unsafe entrypoint test cleanup path.'}
   foreach($file in ($files+@('installation.json','preview.png'))){$target=Join-Path $testApp $file;if(Test-Path -LiteralPath $target){Remove-Item -LiteralPath $target}}
-  $statusFile=Join-Path $testData 'status.json';if(Test-Path -LiteralPath $statusFile){Remove-Item -LiteralPath $statusFile}
+  foreach($name in @('status.json','settings.json')){$stateFile=Join-Path $testData $name;if(Test-Path -LiteralPath $stateFile){Remove-Item -LiteralPath $stateFile}}
   [Array]::Reverse($directories)
   foreach($directory in $directories){if(Test-Path -LiteralPath $directory){Remove-Item -LiteralPath $directory}}
 }
