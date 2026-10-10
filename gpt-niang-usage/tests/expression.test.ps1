@@ -17,19 +17,38 @@ Assert-Equal @(Get-WidgetExpressionRegistry).Count 11 'Registry includes neutral
 Assert-Equal (Resolve-WidgetExpressionMode 'bad') auto 'Unknown persisted modes recover to automatic'
 Assert-Equal (Resolve-WidgetExpressionMode 'cheer') cheer 'Gesture modes are registered even if optional art is absent'
 $state=New-WidgetExpressionState $now
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+119999)) neutral 'Idle threshold waits for 120 seconds'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+11999)) neutral 'Normal pose gets a calm initial hold'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+12000)) happy 'Normal idle includes a smiling pose'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+18000)) neutral 'Normal idle returns to the original pose'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+28000)) shy 'Normal idle varies facial expressions'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+44000)) comfort 'Normal idle includes a hand gesture'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+64000)) wave 'Normal idle occasionally waves'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+120000)) sleepy 'Idle deadline is deterministic'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+138000)) neutral 'Resting idle also changes pose'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+148000)) comfort 'Resting idle does not freeze indefinitely'
 Register-WidgetExpressionEvent $state 'click' ($now+120000)
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+120001)) happy 'Click wakes and reacts'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+123000)) neutral 'Reaction expires at three seconds without idle flicker'
 Register-WidgetExpressionEvent $state 'click' ($now+123001)
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+123001)) cheer 'Second click rotates to cheer'
-Register-WidgetExpressionEvent $state 'click' ($now+123002)
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+123002)) wave 'Third click rotates to wave'
-Register-WidgetExpressionEvent $state 'quote' ($now+123003)
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+123003)) shy 'Quote reacts shyly'
-Register-WidgetExpressionEvent $state 'quote' ($now+123004)
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+123004)) comfort 'Quote rotates to comfort'
+for($offset=123100;$offset-le 130000;$offset+=100){
+  Register-WidgetExpressionEvent $state 'press' ($now+$offset)
+  Assert-Equal (Get-WidgetExpressionName $state $null ($now+$offset+50)) cheer 'A brief press cannot flash the surprised sprite'
+  Register-WidgetExpressionEvent $state 'release' ($now+$offset+60)
+  Register-WidgetExpressionEvent $state 'quote' ($now+$offset+60)
+  Register-WidgetExpressionEvent $state 'click' ($now+$offset+60)
+  Assert-Equal (Get-WidgetExpressionName $state $null ($now+$offset+60)) cheer 'A sustained burst holds one sprite across click and quote events'
+}
+Assert-Equal $state.clickIndex 2 'Suppressed burst clicks do not skip reaction poses'
+Assert-Equal $state.quoteIndex 0 'Suppressed quote events do not consume dialogue poses'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+133059)) cheer 'Reaction remains until three seconds after the burst'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+133060)) neutral 'Burst release returns calmly to baseline'
+Register-WidgetExpressionEvent $state 'click' ($now+133061)
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+133061)) wave 'A later separate interaction can use the next pose'
+Register-WidgetExpressionEvent $state 'quote' ($now+136061)
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+136061)) shy 'A separate dialogue event reacts shyly'
+Register-WidgetExpressionEvent $state 'quote' ($now+139061)
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+139061)) comfort 'A later dialogue event can use the next pose'
 
 $state=New-WidgetExpressionState $now
 Register-WidgetExpressionEvent $state 'refresh' $now
@@ -38,7 +57,8 @@ Assert-Equal (Get-WidgetExpressionName $state $old ($now+1)) thinking 'Old cache
 Register-WidgetExpressionEvent $state 'click' ($now+2)
 Assert-Equal (Get-WidgetExpressionName $state $old ($now+2)) happy 'User reaction takes precedence over refresh'
 Register-WidgetExpressionEvent $state 'press' ($now+3)
-Assert-Equal (Get-WidgetExpressionName $state $old ($now+3)) surprised 'Pressed state takes precedence over reaction'
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+452)) happy 'Brief presses retain their reaction'
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+453)) surprised 'A held press takes precedence after 450 milliseconds'
 $state.mode='shy'
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+130000)) shy 'Manual choice wins over press, refresh, low quota and idle'
 Register-WidgetExpressionEvent $state 'release' ($now+130000)

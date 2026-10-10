@@ -18,17 +18,41 @@ function Resolve-WidgetExpressionMode($Mode){
   return 'auto'
 }
 function New-WidgetExpressionState([long]$Now){
-  return @{mode='auto';lastActiveAt=$Now;pressed=$false;reaction='';reactionUntil=0L;refreshAt=0L;clickIndex=0;quoteIndex=0}
+  return @{mode='auto';lastActiveAt=$Now;pressed=$false;pressedAt=0L;reaction='';reactionUntil=0L;refreshAt=0L;clickIndex=0;quoteIndex=0}
 }
 function Register-WidgetExpressionEvent($State,[ValidateSet('interact','press','release','click','quote','refresh')][string]$Kind,[long]$Now){
   $State.lastActiveAt=$Now
   switch($Kind){
-    'press' {$State.pressed=$true}
+    'press' {if(!$State.pressed){$State.pressedAt=$Now};$State.pressed=$true}
     'release' {$State.pressed=$false}
     'refresh' {$State.refreshAt=$Now}
-    'click' {$State.reaction=@('happy','cheer','wave')[$State.clickIndex%3];$State.clickIndex++;$State.reactionUntil=$Now+3000}
-    'quote' {$State.reaction=@('shy','comfort')[$State.quoteIndex%2];$State.quoteIndex++;$State.reactionUntil=$Now+3000}
   }
+  if($Kind-in @('click','quote')){
+    # Click and dialogue events share one hold: a burst extends it without changing sprites.
+    if(!$State.reaction -or $Now-ge $State.reactionUntil){
+      if($Kind-eq 'click'){$State.reaction=@('happy','cheer','wave')[$State.clickIndex%3];$State.clickIndex++}
+      else{$State.reaction=@('shy','comfort')[$State.quoteIndex%2];$State.quoteIndex++}
+    }
+    $State.reactionUntil=$Now+3000
+  }
+}
+function Get-WidgetAmbientExpression([long]$IdleMilliseconds){
+  if($IdleMilliseconds-ge 120000){
+    $phase=($IdleMilliseconds-120000)%36000
+    if($phase-lt 18000){return 'sleepy'}
+    if($phase-lt 28000){return 'neutral'}
+    return 'comfort'
+  }
+  # Calm holds between facial changes and occasional hand gestures; no tick-rate flicker.
+  $phase=[Math]::Max(0,$IdleMilliseconds)%70000
+  if($phase-lt 12000){return 'neutral'}
+  if($phase-lt 18000){return 'happy'}
+  if($phase-lt 28000){return 'neutral'}
+  if($phase-lt 34000){return 'shy'}
+  if($phase-lt 44000){return 'neutral'}
+  if($phase-lt 52000){return 'comfort'}
+  if($phase-lt 64000){return 'neutral'}
+  return 'wave'
 }
 function ConvertTo-WidgetExpressionNumber($Value){
   if($null-eq $Value -or $Value-is [bool] -or $Value-is [Array] -or $Value-is [Collections.IDictionary]){return $null}
@@ -62,13 +86,12 @@ function Get-WidgetExpressionName($State,$Status,[long]$Now){
     $observed=ConvertTo-WidgetExpressionNumber $Status.observedAt
     if(($null-ne $observed -and $observed-ge $State.refreshAt) -or $Now-ge $State.refreshAt+8000){$State.refreshAt=0L}
   }
-  if($State.pressed){return 'surprised'}
+  if($State.pressed -and $Now-$State.pressedAt-ge 450){return 'surprised'}
   if($State.reaction -and $Now-lt $State.reactionUntil){return $State.reaction}
   if($State.refreshAt-gt 0){return 'thinking'}
   $quota=Get-WidgetQuotaExpression $Status $Now
   if($quota-ne 'neutral'){return $quota}
-  if($Now-$State.lastActiveAt-ge 120000){return 'sleepy'}
-  return 'neutral'
+  return Get-WidgetAmbientExpression ($Now-$State.lastActiveAt)
 }
 function Get-WidgetExpressionAsset([string]$Name){
   if($script:expressionCache.ContainsKey($Name)){return $script:expressionCache[$Name]}

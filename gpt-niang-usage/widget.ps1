@@ -98,7 +98,7 @@ Initialize-WidgetExpressions $script:appDir
 $script:status=$null
 $script:statusStamp=0
 $script:offsetRight=0.0;$script:offsetBottom=0.0;$script:offsetLeft=$null;$script:anchor='right';$script:side='right';$script:scale=1.0;$script:collapsed=$true
-$script:soundOn=$true;$script:soundVolume=0.9;$script:bubbleTapAdvance=$false;$script:hideMenu=$false
+$script:soundOn=$true;$script:soundVolume=0.9;$script:hideMenu=$false
 $script:bubbleMode='quota';$script:sceneStartedAt=0;$script:sceneDeadline=0;$script:sceneTimer=$null;$script:sceneRevision=0
 $script:resetTimeMode='countdown';$script:resetPhaseTimer=$null
 $script:displayRequestToken=$null
@@ -114,7 +114,6 @@ try{$settings=Get-Content -LiteralPath $settingsFile -Raw -Encoding UTF8 | Conve
   }else{$script:offsetBottom=0;if($script:offsetRight-gt 18){$script:anchor='free'}}
   if($null-ne $settings.soundOn){$script:soundOn=[bool]$settings.soundOn}
   if($null-ne $settings.soundVolume){$script:soundVolume=[Math]::Min(1,[Math]::Max(0,[double]$settings.soundVolume))}
-  if($null-ne $settings.bubbleTapAdvance){$script:bubbleTapAdvance=[bool]$settings.bubbleTapAdvance}
   if($null-ne $settings.hideMenu){$script:hideMenu=[bool]$settings.hideMenu}
   Set-WidgetExpressionMode (Resolve-WidgetExpressionMode $settings.expressionMode)
   if(@('original','linked','rainbow','surprise','rare','special','mixed')-contains $settings.colorMode){$script:colorMode=$settings.colorMode}
@@ -126,7 +125,7 @@ function Write-WidgetJson($file,$value){
   $temp=$file+'.tmp';[IO.File]::WriteAllText($temp,($value|ConvertTo-Json -Depth 6),[Text.UTF8Encoding]::new($false))
   if([IO.File]::Exists($file)){[IO.File]::Replace($temp,$file,($file+'.bak'),$true)}else{[IO.File]::Move($temp,$file)}
 }
-function Save-Settings {Write-WidgetJson $settingsFile @{layoutVersion=2;right=$script:offsetRight;left=$script:offsetLeft;bottom=$script:offsetBottom;anchor=$script:anchor;side=$script:side;scale=$script:scale;collapsed=$script:collapsed;soundOn=$script:soundOn;soundVolume=$script:soundVolume;bubbleTapAdvance=$script:bubbleTapAdvance;hideMenu=$script:hideMenu;expressionMode=$script:expressionMode;colorMode=$script:colorMode;colorChance=$script:colorChance;colorTextChance=$script:colorTextChance;colorPaused=$script:colorPaused}}
+function Save-Settings {Write-WidgetJson $settingsFile @{layoutVersion=2;right=$script:offsetRight;left=$script:offsetLeft;bottom=$script:offsetBottom;anchor=$script:anchor;side=$script:side;scale=$script:scale;collapsed=$script:collapsed;soundOn=$script:soundOn;soundVolume=$script:soundVolume;hideMenu=$script:hideMenu;expressionMode=$script:expressionMode;colorMode=$script:colorMode;colorChance=$script:colorChance;colorTextChance=$script:colorTextChance;colorPaused=$script:colorPaused}}
 function Set-Facing {
   $factor=if($script:side-eq 'left'){-1.0}else{1.0}
   $script:ui.FacingScale.ScaleX=$factor;$script:ui.TextFacingScale.ScaleX=$factor
@@ -273,11 +272,10 @@ function Next-Bubble {
   if($script:bubbleMode-eq 'quota'){Switch-Scene 'quote'}else{Hide-Quota}
 }
 function Click-Character {
-  if($script:collapsed){Show-Quota}
-  elseif($script:bubbleTapAdvance){Next-Bubble}
-  elseif($script:bubbleMode-ne 'quota'){Switch-Scene 'quota'}
-  else{Restart-SceneTtl}
   Invoke-WidgetExpressionEvent 'click'
+  if($script:collapsed){Show-Quota}
+  elseif($script:bubbleMode-eq 'quota'){Switch-Scene 'quote'}
+  else{Switch-Scene 'quota'}
 }
 function Show-Quota {
   Invoke-WidgetExpressionEvent 'interact'

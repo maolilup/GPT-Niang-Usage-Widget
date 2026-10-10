@@ -173,8 +173,6 @@ function Initialize-WidgetSettingsMenu {
   $script:settingsMenuUi.Volume=$volume.Slider;$script:settingsMenuUi.VolumeText=$volume.Value;$volume.Slider.Value=$script:soundVolume
   $volume.Slider.Add_ValueChanged({param($sender,$event)if($script:settingsMenuSync){return};$script:soundVolume=[Math]::Round($sender.Value,2);$script:settingsMenuUi.VolumeText.Text=([Math]::Round($sender.Value*100)).ToString()+'%';Set-WidgetAudioVolume;Save-Settings})
   Add-SettingsPanel $volume.Panel
-  Add-SettingsDivider
-  $script:settingsMenuUi.Tap=Add-SettingsAction '点角色也切换内容' {param($sender,$event)$script:bubbleTapAdvance=$sender.IsChecked;Save-Settings} -Description '开启后，连续点角色就能看下一句' -Checkable -ReturnItem
   } -ReturnItem
   Add-SettingsDivider
   $exit=Add-SettingsAction '退出 GPT 娘' {Exit-WidgetForSession} -ReturnItem;$exit.Foreground=[Windows.Media.BrushConverter]::new().ConvertFromString('#A1788D')
@@ -217,7 +215,7 @@ function Update-WidgetSettingsMenu{
   try{
     foreach($mode in $script:settingsMenuUi.ExpressionItems.Keys){$script:settingsMenuUi.ExpressionItems[$mode].IsChecked=$mode-eq $script:expressionMode}
     $script:settingsMenuUi.Bubble.Header=if(!$script:collapsed -and $script:bubbleMode-eq 'quota'){'收起额度气泡'}else{'查看额度'}
-    $script:settingsMenuUi.Tap.IsChecked=$script:bubbleTapAdvance;$script:settingsMenuUi.Sound.IsChecked=$script:soundOn;$script:settingsMenuUi.Hide.IsChecked=$script:hideMenu
+    $script:settingsMenuUi.Sound.IsChecked=$script:soundOn;$script:settingsMenuUi.Hide.IsChecked=$script:hideMenu
     $script:settingsMenuUi.ColorLinked.IsChecked=$script:colorMode-eq 'linked';$script:settingsMenuUi.ColorRainbow.IsChecked=$script:colorMode-eq 'rainbow';$script:settingsMenuUi.ColorOriginal.IsChecked=$script:colorMode-eq 'original'
     $script:settingsMenuUi.ColorSurprise.IsChecked=$script:colorMode-eq 'surprise';$script:settingsMenuUi.ColorRare.IsChecked=$script:colorMode-eq 'rare';$script:settingsMenuUi.ColorSpecial.IsChecked=$script:colorMode-eq 'special'
     $script:settingsMenuUi.ColorMixed.IsChecked=$script:colorMode-eq 'mixed'
