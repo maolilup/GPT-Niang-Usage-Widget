@@ -80,6 +80,10 @@ $state=New-WidgetExpressionState $now
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 19.9) $now) worried 'Fresh below twenty percent is worried'
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 20) $now) neutral 'Twenty percent is normal'
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) $now) pout 'Depleted quota is pout'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 10) ($now+17999)) worried 'Low quota keeps its main mood for a calm hold'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 10) ($now+18000)) comfort 'Low quota occasionally uses a comforting gesture'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+18000)) comfort 'Depleted quota also keeps some ambient movement'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+24000)) pout 'Ambient gesture returns to the depleted mood'
 $mixed=New-Snapshot 10;$mixed.windows+=@{remaining=0;resetsAt=$null}
 Assert-Equal (Get-WidgetExpressionName $state $mixed $now) pout 'Depletion wins across mixed windows'
 foreach($value in @($null,'',-1,101,'bad',[double]::NaN,[double]::PositiveInfinity,$true,@(0,1))){

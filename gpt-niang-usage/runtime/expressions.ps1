@@ -90,7 +90,10 @@ function Get-WidgetExpressionName($State,$Status,[long]$Now){
   if($State.reaction -and $Now-lt $State.reactionUntil){return $State.reaction}
   if($State.refreshAt-gt 0){return 'thinking'}
   $quota=Get-WidgetQuotaExpression $Status $Now
-  if($quota-ne 'neutral'){return $quota}
+  if($quota-ne 'neutral'){
+    if([Math]::Max(0,$Now-$State.lastActiveAt)%24000-ge 18000){return 'comfort'}
+    return $quota
+  }
   return Get-WidgetAmbientExpression ($Now-$State.lastActiveAt)
 }
 function Get-WidgetExpressionAsset([string]$Name){

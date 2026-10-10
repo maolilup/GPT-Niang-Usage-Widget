@@ -646,7 +646,7 @@ function Tick-Widget {
   }
   if($now-$script:lastPresence-ge 1000){
     Update-Quota
-    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
+    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
     $script:lastPresence=$now
     Read-DisplayRequest
   }
