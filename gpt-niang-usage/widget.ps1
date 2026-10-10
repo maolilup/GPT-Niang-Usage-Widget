@@ -252,7 +252,7 @@ function Update-BubbleTooltip {
 function Switch-Scene([string]$mode){
   if($script:collapsed){return}
   $script:sceneRevision++;$script:bubbleMode=$mode
-  if($mode-eq 'quote'){$script:ui.QuoteText.Text=Get-WidgetBubbleQuote $script:dataDir;Fit-QuoteText;Invoke-WidgetExpressionEvent 'quote'}
+  if($mode-eq 'quote'){$script:ui.QuoteText.Text=Get-WidgetBubbleQuote $script:dataDir;Fit-QuoteText}
   if($script:sceneTimer){$script:sceneTimer.Stop()}
   Animate-Value $script:ui.SceneText ([Windows.UIElement]::OpacityProperty) 0 120
   $script:sceneTimer=New-Object Windows.Threading.DispatcherTimer
@@ -260,7 +260,9 @@ function Switch-Scene([string]$mode){
   $script:sceneTimer.Add_Tick({param($timer,$event)
     $timer.Stop()
     if($timer-eq $script:sceneTimer -and !$script:collapsed){
-      Apply-Scene;Animate-Value $script:ui.SceneText ([Windows.UIElement]::OpacityProperty) 1 160
+      Apply-Scene
+      if($script:bubbleMode-eq 'quote'){Invoke-WidgetExpressionEvent 'quote' -Quote ([string]$script:ui.QuoteText.Tag)}
+      Animate-Value $script:ui.SceneText ([Windows.UIElement]::OpacityProperty) 1 160
       Restart-SceneTtl 160
     }
   })
@@ -646,7 +648,7 @@ function Tick-Widget {
   }
   if($now-$script:lastPresence-ge 1000){
     Update-Quota
-    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
+    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
     $script:lastPresence=$now
     Read-DisplayRequest
   }

@@ -17,23 +17,50 @@ function Resolve-WidgetExpressionMode($Mode){
   if($Mode-eq 'auto' -or $Mode-in @($script:expressionRegistry|ForEach-Object{$_.name})){return [string]$Mode}
   return 'auto'
 }
-function New-WidgetExpressionState([long]$Now){
-  return @{mode='auto';lastActiveAt=$Now;pressed=$false;pressedAt=0L;reaction='';reactionUntil=0L;refreshAt=0L;clickIndex=0;quoteIndex=0}
+function Initialize-WidgetQuoteExpressions([string]$AppDir){
+  $script:quoteExpressionMap=@{}
+  try{
+    $quotes=[IO.File]::ReadAllText((Join-Path $AppDir 'assets\quotes.json'),[Text.Encoding]::UTF8)|ConvertFrom-Json
+    foreach($row in $quotes.quotes){
+      if($row.text-is [string] -and $row.expression-in @($script:expressionRegistry.name)){
+        $script:quoteExpressionMap[$row.text.Trim()]=[string]$row.expression
+      }
+    }
+  }catch{} # Missing optional metadata does not prevent the original widget from starting.
 }
-function Register-WidgetExpressionEvent($State,[ValidateSet('interact','press','release','click','quote','refresh')][string]$Kind,[long]$Now){
+function Get-WidgetQuoteExpression([string]$Quote){
+  $text=$Quote.Trim()
+  if($script:quoteExpressionMap -and $script:quoteExpressionMap.ContainsKey($text)){return $script:quoteExpressionMap[$text]}
+  # Custom quotes keep their existing text/weight format; use a gentle fallback by topic.
+  if($text-match '休息|睡|困|充电|歇一会'){return 'sleepy'}
+  if($text-match '没关系|不怕|别怕|慢慢来|辛苦|加油'){return 'comfort'}
+  if($text-match '恭喜|成功|太棒|做到了|完成啦'){return 'cheer'}
+  if($text-match '你好|早上好|晚上好|多关照|ciallo|hello'){return 'wave'}
+  if($text-match '害羞|喜欢|看我|脸红'){return 'shy'}
+  if($text-match '惊讶|吓|居然|竟然'){return 'surprised'}
+  if($text-match '生气|血压|便宜货|哼'){return 'pout'}
+  if($text-match '担心|余额不足|额度不足|崩了|小心|保存'){return 'worried'}
+  if($text-match '思考|想想|问题|代码|思路|试试'){return 'thinking'}
+  return 'happy'
+}
+function New-WidgetExpressionState([long]$Now){
+  return @{mode='auto';lastActiveAt=$Now;pressed=$false;pressedAt=0L;reaction='';reactionUntil=0L;refreshAt=0L}
+}
+function Register-WidgetExpressionEvent($State,[ValidateSet('interact','press','release','click','quote','refresh')][string]$Kind,[long]$Now,[string]$Quote='',[string]$CurrentExpression=''){
   $State.lastActiveAt=$Now
   switch($Kind){
     'press' {if(!$State.pressed){$State.pressedAt=$Now};$State.pressed=$true}
     'release' {$State.pressed=$false}
     'refresh' {$State.refreshAt=$Now}
   }
-  if($Kind-in @('click','quote')){
-    # Click and dialogue events share one hold: a burst extends it without changing sprites.
-    if(!$State.reaction -or $Now-ge $State.reactionUntil){
-      if($Kind-eq 'click'){$State.reaction=@('happy','cheer','wave')[$State.clickIndex%3];$State.clickIndex++}
-      else{$State.reaction=@('shy','comfort')[$State.quoteIndex%2];$State.quoteIndex++}
-    }
-    $State.reactionUntil=$Now+3000
+  if($Kind-eq 'quote'){
+    $State.reaction=Get-WidgetQuoteExpression $Quote
+    # Keep the paired pose through the 280 ms transition and five-second reading period.
+    $State.reactionUntil=$Now+5500
+  }elseif($Kind-ne 'refresh' -and $CurrentExpression-in @($script:expressionRegistry.name)){
+    # Resetting the idle clock must not reset the visible pose on a quota click or short press.
+    $State.reaction=$CurrentExpression
+    $State.reactionUntil=[Math]::Max($State.reactionUntil,$Now+3000)
   }
 }
 function Get-WidgetAmbientExpression([long]$IdleMilliseconds){
@@ -135,6 +162,7 @@ function Update-WidgetExpression([long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeM
 }
 function Initialize-WidgetExpressions([string]$AppDir,[long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()){
   $script:expressionAppDir=$AppDir;$script:expressionCache=@{}
+  Initialize-WidgetQuoteExpressions $AppDir
   $script:expressionState=New-WidgetExpressionState $Now;$script:expressionMode='auto'
   Update-WidgetExpression $Now
 }
@@ -144,8 +172,8 @@ function Set-WidgetExpressionMode($Mode,[long]$Now=[DateTimeOffset]::UtcNow.ToUn
   Register-WidgetExpressionEvent $script:expressionState 'interact' $Now
   Update-WidgetExpression $Now
 }
-function Invoke-WidgetExpressionEvent([string]$Kind,[long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()){
+function Invoke-WidgetExpressionEvent([string]$Kind,[long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(),[string]$Quote=''){
   if(!$script:expressionState){return}
-  Register-WidgetExpressionEvent $script:expressionState $Kind $Now
+  Register-WidgetExpressionEvent $script:expressionState $Kind $Now -Quote $Quote -CurrentExpression $script:expressionCurrent
   Update-WidgetExpression $Now
 }

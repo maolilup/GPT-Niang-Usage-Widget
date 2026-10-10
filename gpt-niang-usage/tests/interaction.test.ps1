@@ -1,4 +1,4 @@
-param([string]$TestRoot=$PSScriptRoot)
+﻿param([string]$TestRoot=$PSScriptRoot)
 $ErrorActionPreference='Stop'
 $source=[IO.File]::ReadAllText((Join-Path (Split-Path $TestRoot -Parent) 'widget.ps1'),[Text.Encoding]::UTF8)
 $tokens=$null;$errors=$null
@@ -21,9 +21,53 @@ foreach($legacyPreference in @($false,$true)){
     Assert-Equal $script:collapsed $false 'Repeated clicks keep the content visible'
     Assert-Equal $script:bubbleMode $expected 'Character clicks alternate quota and dialogue'
   }
-  Assert-Equal ($script:events -join ',') 'expression:click,show:quota,expression:click,switch:quote,expression:click,switch:quota,expression:click,switch:quote,expression:click,switch:quota,expression:click,switch:quote' 'Each click starts one stable reaction before changing content'
+  Assert-Equal ($script:events -join ',') 'expression:click,show:quota,expression:click,switch:quote,expression:click,switch:quota,expression:click,switch:quote,expression:click,switch:quota,expression:click,switch:quote' 'Each click records activity before alternating the content'
   $script:collapsed=$true
   Click-Character
   Assert-Equal $script:bubbleMode quota 'After the bubble closes, the next click starts with quota'
 }
-Write-Output 'PASS: character clicks alternate quota/dialogue, preserve visibility, restart with quota after close and ignore the obsolete opt-in setting'
+# Exercise the real scene timer and expression adapter, including cancelled rapid transitions.
+Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
+$appDir=Split-Path $TestRoot -Parent
+. ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $appDir 'runtime\expressions.ps1'),[Text.Encoding]::UTF8)))
+$definition=$ast.Find({param($node)$node-is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name-eq 'Switch-Scene'},$true)
+. ([ScriptBlock]::Create($definition.Extent.Text))
+$script:ui=@{Girl=[Windows.Controls.Image]::new();QuoteText=[Windows.Controls.TextBlock]::new();SceneText=[Windows.Controls.Border]::new()}
+$script:status=$null;$script:sceneRevision=0;$script:sceneTimer=$null;$script:collapsed=$true;$script:bubbleMode='quota'
+$script:dialogues=[Collections.Generic.Queue[string]]::new()
+foreach($text in @('Ciallo～ 今天也请多关照。','小小的成功，也值得开心一下。','休息一下，灵感也要充电。','真当我是便宜货啊...')){$script:dialogues.Enqueue($text)}
+function Get-WidgetBubbleQuote($data){return $script:dialogues.Dequeue()}
+function Fit-QuoteText {$script:ui.QuoteText.Tag=$script:ui.QuoteText.Text;$script:ui.QuoteText.Text=$script:ui.QuoteText.Text.Replace('，',",`n")}
+function Animate-Value {}
+function Apply-Scene {$script:appliedMode=$script:bubbleMode}
+function Restart-SceneTtl {}
+function Wait-SceneRender {
+  $frame=[Windows.Threading.DispatcherFrame]::new()
+  $stop=[Windows.Threading.DispatcherTimer]::new();$stop.Interval=[TimeSpan]::FromMilliseconds(180)
+  $stop.Add_Tick({param($timer,$event)$timer.Stop();$frame.Continue=$false}.GetNewClosure())
+  $stop.Start();[Windows.Threading.Dispatcher]::PushFrame($frame)
+}
+$now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+Initialize-WidgetExpressions $appDir ($now-12000)
+Update-WidgetExpression $now
+Assert-Equal $script:expressionCurrent happy 'Begin with a visible ambient smile'
+foreach($expected in @('happy','wave','wave','cheer','cheer','sleepy')){
+  Invoke-WidgetExpressionEvent 'press'
+  Invoke-WidgetExpressionEvent 'release'
+  $before=$script:expressionCurrent
+  Click-Character
+  Assert-Equal $script:expressionCurrent $before 'Starting a transition does not flash a new sprite'
+  Wait-SceneRender
+  Assert-Equal $script:expressionCurrent $expected 'Only rendered dialogue changes the sprite to its paired gesture'
+}
+Assert-Equal $script:ui.QuoteText.Tag '休息一下，灵感也要充电。' 'Pairing uses the original text before layout inserts line breaks'
+Click-Character # Return to quota and keep sleepy.
+Wait-SceneRender
+Click-Character # Pending pout dialogue is cancelled before it is shown.
+Click-Character
+Wait-SceneRender
+Assert-Equal $script:bubbleMode quota 'Rapid cancellation ends on quota'
+Assert-Equal $script:appliedMode quota 'Only the latest scene timer presents content'
+Assert-Equal $script:expressionCurrent sleepy 'A cancelled dialogue cannot change the visible sprite'
+if($script:sceneTimer){$script:sceneTimer.Stop()}
+Write-Output 'PASS: quota/dialogue cycle, paired dialogue gestures, retained quota expressions, canonical text and cancelled rapid scene transitions'

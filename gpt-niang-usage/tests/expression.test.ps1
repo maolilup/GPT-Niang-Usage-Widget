@@ -1,4 +1,4 @@
-param([string]$TestRoot=$PSScriptRoot)
+﻿param([string]$TestRoot=$PSScriptRoot)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 $appDir=Split-Path $TestRoot -Parent
@@ -26,38 +26,59 @@ Assert-Equal (Get-WidgetExpressionName $state $null ($now+64000)) wave 'Normal i
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+120000)) sleepy 'Idle deadline is deterministic'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+138000)) neutral 'Resting idle also changes pose'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+148000)) comfort 'Resting idle does not freeze indefinitely'
-Register-WidgetExpressionEvent $state 'click' ($now+120000)
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+120001)) happy 'Click wakes and reacts'
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+123000)) neutral 'Reaction expires at three seconds without idle flicker'
-Register-WidgetExpressionEvent $state 'click' ($now+123001)
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+123001)) cheer 'Second click rotates to cheer'
-for($offset=123100;$offset-le 130000;$offset+=100){
-  Register-WidgetExpressionEvent $state 'press' ($now+$offset)
-  Assert-Equal (Get-WidgetExpressionName $state $null ($now+$offset+50)) cheer 'A brief press cannot flash the surprised sprite'
-  Register-WidgetExpressionEvent $state 'release' ($now+$offset+60)
-  Register-WidgetExpressionEvent $state 'quote' ($now+$offset+60)
-  Register-WidgetExpressionEvent $state 'click' ($now+$offset+60)
-  Assert-Equal (Get-WidgetExpressionName $state $null ($now+$offset+60)) cheer 'A sustained burst holds one sprite across click and quote events'
+# Dialogue semantics replace the old independent click/quote pose rotations.
+$builtIn=[IO.File]::ReadAllText((Join-Path $appDir 'assets\quotes.json'),[Text.Encoding]::UTF8)|ConvertFrom-Json
+foreach($row in $builtIn.quotes){
+  if(!$row.expression -or $row.expression-notin @((Get-WidgetExpressionRegistry).name)){throw 'Every built-in quote needs a registered expression'}
+  Assert-Equal (Get-WidgetQuoteExpression $row.text) $row.expression 'Built-in pairing survives quote normalization'
 }
-Assert-Equal $state.clickIndex 2 'Suppressed burst clicks do not skip reaction poses'
-Assert-Equal $state.quoteIndex 0 'Suppressed quote events do not consume dialogue poses'
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+133059)) cheer 'Reaction remains until three seconds after the burst'
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+133060)) neutral 'Burst release returns calmly to baseline'
-Register-WidgetExpressionEvent $state 'click' ($now+133061)
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+133061)) wave 'A later separate interaction can use the next pose'
-Register-WidgetExpressionEvent $state 'quote' ($now+136061)
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+136061)) shy 'A separate dialogue event reacts shyly'
-Register-WidgetExpressionEvent $state 'quote' ($now+139061)
-Assert-Equal (Get-WidgetExpressionName $state $null ($now+139061)) comfort 'A later dialogue event can use the next pose'
+Assert-Equal (Get-WidgetQuoteExpression 'Ciallo～ 今天也请多关照。') wave 'Greeting waves'
+Assert-Equal (Get-WidgetQuoteExpression '小小的成功，也值得开心一下。') cheer 'Success celebrates'
+Assert-Equal (Get-WidgetQuoteExpression '休息一下，灵感也要充电。') sleepy 'Resting dialogue looks sleepy'
+Assert-Equal (Get-WidgetQuoteExpression '  我在看额度。你在看我。各忙各的。  ') shy 'Canonical text is trimmed before pairing'
+Assert-Equal (Get-WidgetQuoteExpression '辛苦啦，休息一下吧') sleepy 'Custom resting text gets a matching mood'
+Assert-Equal (Get-WidgetQuoteExpression '不怕，我们慢慢来') comfort 'Custom reassurance uses the comforting gesture'
+Assert-Equal (Get-WidgetQuoteExpression '自定义的一句话') happy 'Unclassified custom text has a calm friendly fallback'
+Assert-Equal (Get-WidgetQuoteExpression '') happy 'Missing text has a safe fallback'
+Register-WidgetExpressionEvent $state 'click' ($now+120000) -CurrentExpression sleepy
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+120001)) sleepy 'Quota click preserves the current ambient pose'
+Register-WidgetExpressionEvent $state 'quote' ($now+120100) -Quote 'Ciallo～ 今天也请多关照。'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+120100)) wave 'Dialogue replaces the preserved pose with its matching gesture'
+for($offset=120200;$offset-le 121000;$offset+=100){
+  Register-WidgetExpressionEvent $state 'press' ($now+$offset) -CurrentExpression wave
+  Assert-Equal (Get-WidgetExpressionName $state $null ($now+$offset+50)) wave 'Brief presses do not flash another sprite'
+  Register-WidgetExpressionEvent $state 'release' ($now+$offset+60) -CurrentExpression wave
+  Register-WidgetExpressionEvent $state 'click' ($now+$offset+60) -CurrentExpression wave
+  Assert-Equal (Get-WidgetExpressionName $state $null ($now+$offset+60)) wave 'Repeated quota clicks preserve the dialogue pose'
+}
+Register-WidgetExpressionEvent $state 'quote' ($now+121100) -Quote '小小的成功，也值得开心一下。'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+121100)) cheer 'A new dialogue changes the matching gesture even inside the previous hold'
+Register-WidgetExpressionEvent $state 'click' ($now+121200) -CurrentExpression cheer
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+121200)) cheer 'Returning to quota retains the last dialogue pose'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+126599)) cheer 'Dialogue pose lasts through the bubble fade and full reading time'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+126600)) neutral 'After the dialogue hold, daily variation resumes'
+
+# The actual event adapter must capture the displayed sprite before resetting the idle clock.
+Initialize-WidgetExpressions $appDir $now
+Update-WidgetExpression ($now+12000)
+Assert-Equal $script:expressionCurrent happy 'Fixture is in an ambient smile'
+Invoke-WidgetExpressionEvent 'press' ($now+12001)
+Invoke-WidgetExpressionEvent 'release' ($now+12030)
+Invoke-WidgetExpressionEvent 'click' ($now+12030)
+Assert-Equal $script:expressionCurrent happy 'Real quota click does not reset an ambient smile to neutral'
+Invoke-WidgetExpressionEvent 'quote' ($now+12100) -Quote '我在看额度。你在看我。各忙各的。'
+Assert-Equal $script:expressionCurrent shy 'Real dialogue event applies the paired sprite'
+Invoke-WidgetExpressionEvent 'click' ($now+12200)
+Assert-Equal $script:expressionCurrent shy 'Real quota return does not change the paired sprite'
 
 $state=New-WidgetExpressionState $now
 Register-WidgetExpressionEvent $state 'refresh' $now
 $old=New-Snapshot 10 ($now-1)
 Assert-Equal (Get-WidgetExpressionName $state $old ($now+1)) thinking 'Old cached status cannot complete a new refresh'
-Register-WidgetExpressionEvent $state 'click' ($now+2)
-Assert-Equal (Get-WidgetExpressionName $state $old ($now+2)) happy 'User reaction takes precedence over refresh'
+Register-WidgetExpressionEvent $state 'quote' ($now+2) -Quote '小小的成功，也值得开心一下。'
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+2)) cheer 'Dialogue reaction takes precedence over refresh'
 Register-WidgetExpressionEvent $state 'press' ($now+3)
-Assert-Equal (Get-WidgetExpressionName $state $old ($now+452)) happy 'Brief presses retain their reaction'
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+452)) cheer 'Brief presses retain their reaction'
 Assert-Equal (Get-WidgetExpressionName $state $old ($now+453)) surprised 'A held press takes precedence after 450 milliseconds'
 $state.mode='shy'
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+130000)) shy 'Manual choice wins over press, refresh, low quota and idle'
@@ -107,6 +128,7 @@ Register-WidgetExpressionEvent $state 'click' $now
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+3000)) pout 'Transient expiry restores quota immediately'
 
 # Real PNGs exercise WPF decoding, alpha caches and shared colour masks.
+Initialize-WidgetExpressions $appDir $now
 $neutral=$script:bitmap
 $mask=[Windows.Media.ImageBrush]::new($neutral)
 $halo=[Windows.Shapes.Rectangle]::new();$tint=[Windows.Shapes.Rectangle]::new()
