@@ -119,6 +119,15 @@ function Initialize-WidgetSettingsMenu {
   Add-SettingsAction '刷新额度' {Request-Refresh}
   Add-SettingsAction '编辑我的语录' {Open-QuoteEditor}
   Add-SettingsDivider
+  $script:settingsMenuUi.Expressions=Add-SettingsSubmenu '表情与动作' {
+    $script:settingsMenuUi.ExpressionItems=@{}
+    $automatic=Add-SettingsAction '自动表情' {Set-WidgetExpressionMode 'auto';Save-Settings;Update-WidgetSettingsMenu} -Checkable -ReturnItem
+    $script:settingsMenuUi.ExpressionItems['auto']=$automatic
+    foreach($expression in (Get-WidgetExpressionRegistry)){
+      $item=Add-SettingsAction $expression.label {param($sender,$event)Set-WidgetExpressionMode ([string]$sender.Tag);Save-Settings;Update-WidgetSettingsMenu} -Checkable -ReturnItem
+      $item.Tag=$expression.name;$script:settingsMenuUi.ExpressionItems[$expression.name]=$item
+    }
+  } -ReturnItem
   $script:settingsMenuUi.Appearance=Add-SettingsSubmenu '外观与位置' {
   $presets=New-Object Windows.Controls.Primitives.UniformGrid;$presets.Columns=3;$presets.Margin=[Windows.Thickness]::new(0,1,0,2);$script:settingsMenuUi.SizeButtons=@()
   foreach($choice in @(@{label='小 · 80%';scale=0.8},@{label='标准 · 100%';scale=1.0},@{label='大 · 140%';scale=1.4})){
@@ -206,6 +215,7 @@ function Update-WidgetSizePresets{
 function Update-WidgetSettingsMenu{
   $script:settingsMenuSync=$true
   try{
+    foreach($mode in $script:settingsMenuUi.ExpressionItems.Keys){$script:settingsMenuUi.ExpressionItems[$mode].IsChecked=$mode-eq $script:expressionMode}
     $script:settingsMenuUi.Bubble.Header=if(!$script:collapsed -and $script:bubbleMode-eq 'quota'){'收起额度气泡'}else{'查看额度'}
     $script:settingsMenuUi.Tap.IsChecked=$script:bubbleTapAdvance;$script:settingsMenuUi.Sound.IsChecked=$script:soundOn;$script:settingsMenuUi.Hide.IsChecked=$script:hideMenu
     $script:settingsMenuUi.ColorLinked.IsChecked=$script:colorMode-eq 'linked';$script:settingsMenuUi.ColorRainbow.IsChecked=$script:colorMode-eq 'rainbow';$script:settingsMenuUi.ColorOriginal.IsChecked=$script:colorMode-eq 'original'
@@ -221,6 +231,7 @@ function Update-WidgetSettingsMenu{
 }
 
 function Open-WidgetMenu {
+  Invoke-WidgetExpressionEvent 'interact'
   Set-WidgetMenuBounds
   Update-WidgetSettingsMenu
   $script:context.IsOpen=$true

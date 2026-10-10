@@ -1,0 +1,178 @@
+param([string]$TestRoot=$PSScriptRoot)
+$ErrorActionPreference='Stop'
+Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
+$appDir=Split-Path $TestRoot -Parent
+$module=Join-Path $appDir 'runtime\expressions.ps1'
+if(!(Test-Path -LiteralPath $module)){throw 'Expression feature missing: runtime/expressions.ps1 must provide deterministic selection and sprite swapping.'}
+. ([ScriptBlock]::Create([IO.File]::ReadAllText($module,[Text.Encoding]::UTF8)))
+function Assert-Equal($actual,$expected,[string]$message){if($actual-ne $expected){throw "$message : expected '$expected', got '$actual'"}}
+function Assert-Same($actual,$expected,[string]$message){if(![Object]::ReferenceEquals($actual,$expected)){throw $message}}
+function New-Snapshot($remaining,[long]$at=$now){@{ok=$true;queryOk=$true;observedAt=$at;windows=@(@{remaining=$remaining;resetsAt=[Math]::Floor($now/1000)+3600})}}
+$now=1800000000000L
+$script:ui=@{Girl=[Windows.Controls.Image]::new()}
+Initialize-WidgetExpressions $appDir $now
+Assert-Equal $script:expressionMode auto 'Default selection is automatic'
+Assert-Equal $script:expressionCurrent neutral 'Default sprite is original'
+Assert-Equal @(Get-WidgetExpressionRegistry).Count 11 'Registry includes neutral and ten expressions'
+Assert-Equal (Resolve-WidgetExpressionMode 'bad') auto 'Unknown persisted modes recover to automatic'
+Assert-Equal (Resolve-WidgetExpressionMode 'cheer') cheer 'Gesture modes are registered even if optional art is absent'
+$state=New-WidgetExpressionState $now
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+119999)) neutral 'Idle threshold waits for 120 seconds'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+120000)) sleepy 'Idle deadline is deterministic'
+Register-WidgetExpressionEvent $state 'click' ($now+120000)
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+120001)) happy 'Click wakes and reacts'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+123000)) neutral 'Reaction expires at three seconds without idle flicker'
+Register-WidgetExpressionEvent $state 'click' ($now+123001)
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+123001)) cheer 'Second click rotates to cheer'
+Register-WidgetExpressionEvent $state 'click' ($now+123002)
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+123002)) wave 'Third click rotates to wave'
+Register-WidgetExpressionEvent $state 'quote' ($now+123003)
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+123003)) shy 'Quote reacts shyly'
+Register-WidgetExpressionEvent $state 'quote' ($now+123004)
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+123004)) comfort 'Quote rotates to comfort'
+
+$state=New-WidgetExpressionState $now
+Register-WidgetExpressionEvent $state 'refresh' $now
+$old=New-Snapshot 10 ($now-1)
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+1)) thinking 'Old cached status cannot complete a new refresh'
+Register-WidgetExpressionEvent $state 'click' ($now+2)
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+2)) happy 'User reaction takes precedence over refresh'
+Register-WidgetExpressionEvent $state 'press' ($now+3)
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+3)) surprised 'Pressed state takes precedence over reaction'
+$state.mode='shy'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+130000)) shy 'Manual choice wins over press, refresh, low quota and idle'
+Register-WidgetExpressionEvent $state 'release' ($now+130000)
+Assert-Equal $state.pressed $false 'Release clears pressed state'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+300000)) shy 'Manual mode stays selected indefinitely'
+$state.mode='auto'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+300000)) sleepy 'Returning to automatic resumes state deadlines'
+
+$state=New-WidgetExpressionState $now
+Register-WidgetExpressionEvent $state 'refresh' $now
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+7999)) thinking 'Refresh survives just before eight-second deadline'
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+8000)) worried 'Refresh expires at eight seconds and resumes quota state'
+$state=New-WidgetExpressionState $now
+Register-WidgetExpressionEvent $state 'refresh' $now
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+1)) pout 'Observation at the request timestamp completes refresh'
+Assert-Equal (Get-WidgetExpressionName $state $null ($now+2)) neutral 'Completed refresh cannot return to thinking after status loss'
+
+$state=New-WidgetExpressionState $now
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 19.9) $now) worried 'Fresh below twenty percent is worried'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 20) $now) neutral 'Twenty percent is normal'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) $now) pout 'Depleted quota is pout'
+$mixed=New-Snapshot 10;$mixed.windows+=@{remaining=0;resetsAt=$null}
+Assert-Equal (Get-WidgetExpressionName $state $mixed $now) pout 'Depletion wins across mixed windows'
+foreach($value in @($null,'',-1,101,'bad',[double]::NaN,[double]::PositiveInfinity,$true,@(0,1))){
+  Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot $value) $now) neutral 'Malformed remaining never becomes zero'
+}
+foreach($snapshot in @(
+  @{ok=$true;queryOk=$true;observedAt=$now;windows=@(@{used=100})},
+  @{ok=$true;queryOk=$false;observedAt=$now;windows=@(@{remaining=0})},
+  @{ok=$false;queryOk=$true;observedAt=$now;windows=@(@{remaining=0})},
+  @{ok=$true;queryOk=$true;error='failed';observedAt=$now;windows=@(@{remaining=0})},
+  (New-Snapshot 0 ($now-180001)),(New-Snapshot 0 ($now+1)),(New-Snapshot 0 0),
+  @{ok=$true;queryOk=$true;observedAt='bad';windows=@(@{remaining=0})},
+  @{ok=$true;queryOk=$true;observedAt=$now;windows=@(@{remaining=0;resetsAt=[Math]::Floor($now/1000)})},
+  @{ok=$true;queryOk=$true;observedAt=$now;windows=@(@{remaining=0;resetsAt='bad'})},
+  @{ok=$true;queryOk=$true;observedAt=$now;windows=@()}
+)){
+  Assert-Equal (Get-WidgetExpressionName $state $snapshot $now) neutral 'No data, stale, failed or expired quota uses normal fallback'
+}
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 10 ($now-180000)) $now) worried 'Freshness boundary includes 180 seconds'
+Register-WidgetExpressionEvent $state 'click' $now
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+3000)) pout 'Transient expiry restores quota immediately'
+
+# Real PNGs exercise WPF decoding, alpha caches and shared colour masks.
+$neutral=$script:bitmap
+$mask=[Windows.Media.ImageBrush]::new($neutral)
+$halo=[Windows.Shapes.Rectangle]::new();$tint=[Windows.Shapes.Rectangle]::new()
+$halo.OpacityMask=$mask;$tint.OpacityMask=$mask
+$flow=[Windows.Media.LinearGradientBrush]::new();$halo.Fill=$flow;$tint.Fill=$flow
+$script:widgetColors=@{halo=$halo;tint=$tint}
+Set-WidgetExpressionMode happy $now
+Assert-Equal $script:expressionCurrent happy 'Manual choice displays real happy sprite'
+Assert-Equal $script:bitmap.IsFrozen $true 'Decoded image is frozen'
+Assert-Equal $script:bitmap.PixelWidth 1254 'Expression uses its own decoded dimensions'
+Assert-Same $script:bitmap $script:ui.Girl.Source 'Visible image and alpha bitmap source are synchronized'
+Assert-Same $script:bitmap $mask.ImageSource 'Colour opacity mask follows current sprite'
+Assert-Same $halo.Fill $flow 'Expression does not replace animated colour brush'
+Assert-Equal $script:alphaStride ($script:bitmap.PixelWidth*4) 'Stride follows the selected bitmap'
+Assert-Equal $script:alphaPixels.Length ($script:alphaStride*$script:bitmap.PixelHeight) 'Alpha buffer matches selected bitmap'
+$happy=$script:bitmap;$happyAlpha=$script:alphaPixels
+Set-WidgetExpressionMode neutral $now
+Assert-Same $script:bitmap $neutral 'Neutral bitmap is cached'
+Set-WidgetExpressionMode happy $now
+Assert-Same $script:bitmap $happy 'Decoded expression is reused'
+Assert-Same $script:alphaPixels $happyAlpha 'Alpha buffer is reused'
+Register-WidgetExpressionEvent $script:expressionState 'press' $now
+Update-WidgetExpression ($now+130000)
+Assert-Equal $script:expressionCurrent happy 'Manual visual survives automatic events and idle ticks'
+
+# Tiny fixtures verify variant dimensions and transparent click-through, independent of generated art.
+$fixture=Join-Path ([IO.Path]::GetTempPath()) ('gpt-niang-expression-'+[Guid]::NewGuid().ToString('N'))
+try{
+  $null=New-Item -ItemType Directory -Path (Join-Path $fixture 'assets\expressions') -Force
+  Copy-Item -LiteralPath (Join-Path $appDir 'assets\gpt-dragon-niang-bust.png') -Destination (Join-Path $fixture 'assets\gpt-dragon-niang-bust.png')
+  $pixels=[byte[]](0,0,0,0, 20,30,40,255, 20,30,40,255, 0,0,0,0, 0,0,0,0, 20,30,40,255)
+  $tiny=[Windows.Media.Imaging.BitmapSource]::Create(2,3,96,96,[Windows.Media.PixelFormats]::Bgra32,$null,$pixels,8)
+  $encoder=[Windows.Media.Imaging.PngBitmapEncoder]::new();$encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($tiny))
+  $stream=[IO.File]::Create((Join-Path $fixture 'assets\expressions\happy.png'));try{$encoder.Save($stream)}finally{$stream.Dispose()}
+  [IO.File]::WriteAllText((Join-Path $fixture 'assets\expressions\shy.png'),'not a png')
+  $script:widgetColors=$null
+  $script:ui.Root=[Windows.Controls.Canvas]::new();$script:ui.Girl=[Windows.Controls.Image]::new()
+  $script:ui.Girl.Width=20;$script:ui.Girl.Height=30;$script:ui.Girl.Stretch=[Windows.Media.Stretch]::UniformToFill
+  $script:ui.Root.Children.Add($script:ui.Girl)|Out-Null
+  Initialize-WidgetExpressions $fixture $now
+  Set-WidgetExpressionMode happy $now
+  $root=$script:ui.Root;$root.Measure([Windows.Size]::new(30,40));$root.Arrange([Windows.Rect]::new(0,0,30,40));$root.UpdateLayout()
+  $tokens=$null;$errors=$null
+  $widget=[IO.File]::ReadAllText((Join-Path $appDir 'widget.ps1'),[Text.Encoding]::UTF8)
+  $ast=[Management.Automation.Language.Parser]::ParseInput($widget,[ref]$tokens,[ref]$errors)
+  if($errors.Count){throw ($errors|Out-String)}
+  foreach($name in @('Test-GirlAlpha','Write-WidgetJson','Save-Settings')){
+    $function=$ast.Find({param($node)$node-is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name-eq $name},$true)
+    . ([ScriptBlock]::Create($function.Extent.Text))
+  }
+  Assert-Equal $script:bitmap.PixelWidth 2 'Variant width is not assumed to equal original'
+  Assert-Equal $script:bitmap.PixelHeight 3 'Variant height is not assumed to equal original'
+  Assert-Equal (Test-GirlAlpha ([Windows.Point]::new(5,5))) $false 'Transparent variant region clicks through'
+  Assert-Equal (Test-GirlAlpha ([Windows.Point]::new(15,5))) $true 'Opaque variant region accepts click'
+  Assert-Equal (Test-GirlAlpha ([Windows.Point]::new(-1,5))) $false 'Outside variant is not clickable'
+  Set-WidgetExpressionMode wave $now
+  Assert-Equal $script:expressionCurrent neutral 'Missing optional image falls back to original'
+  Assert-Equal $script:expressionMode wave 'Missing image preserves manual preference'
+  Set-WidgetExpressionMode shy $now
+  Assert-Equal $script:expressionCurrent neutral 'Corrupt optional image falls back to original'
+  $settingsFile=Join-Path $fixture 'settings.json'
+  Save-Settings
+  $saved=Get-Content -LiteralPath $settingsFile -Raw -Encoding UTF8|ConvertFrom-Json
+  Assert-Equal $saved.expressionMode shy 'Settings persist the registered manual choice'
+  Initialize-WidgetExpressions $fixture $now
+  Set-WidgetExpressionMode (Resolve-WidgetExpressionMode $saved.expressionMode) $now
+  Assert-Equal $script:expressionMode shy 'Saved mode restores after a fresh initialization'
+  # Exercise the real WPF submenu and its handlers, including restored checkmarks.
+  . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $appDir 'runtime\ui-settings.ps1'),[Text.Encoding]::UTF8)))
+  . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $appDir 'runtime\color-theme.ps1'),[Text.Encoding]::UTF8)))
+  $script:window=[Windows.Markup.XamlReader]::Parse([IO.File]::ReadAllText((Join-Path $appDir 'widget.xaml'),[Text.Encoding]::UTF8))
+  $script:scale=1.0;$script:soundOn=$true;$script:soundVolume=0.9;$script:hideMenu=$false;$script:bubbleTapAdvance=$false
+  $script:collapsed=$true;$script:bubbleMode='quota'
+  Initialize-WidgetSettingsMenu
+  Assert-Equal $script:settingsMenuUi.ExpressionItems.Count 12 'Submenu offers auto, original, all expressions and gestures'
+  Assert-Equal $script:settingsMenuUi.ExpressionItems.shy.IsChecked $true 'Restored manual preference has a checkmark'
+  $item=$script:settingsMenuUi.ExpressionItems.happy
+  $item.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.MenuItem]::ClickEvent,$item))
+  Assert-Equal $script:expressionMode happy 'Real submenu handler selects its tagged sprite'
+  Assert-Equal $script:settingsMenuUi.ExpressionItems.happy.IsChecked $true 'New choice synchronizes its checkmark'
+  Assert-Equal $script:settingsMenuUi.ExpressionItems.shy.IsChecked $false 'Previous choice loses its checkmark'
+  Assert-Equal (Get-Content -LiteralPath $settingsFile -Raw -Encoding UTF8|ConvertFrom-Json).expressionMode happy 'Menu choice is persisted'
+  $automatic=$script:settingsMenuUi.ExpressionItems.auto
+  $automatic.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.MenuItem]::ClickEvent,$automatic))
+  Assert-Equal $script:expressionMode auto 'Auto menu item resumes automatic selection'
+  Assert-Equal $script:settingsMenuUi.ExpressionItems.auto.IsChecked $true 'Auto checkmark is synchronized'
+  $script:window.Close()
+  Write-Output 'PASS: expression priorities, deterministic deadlines, safe quota validation, manual persistence, WPF cache, alpha hit regions, palette masks and optional image recovery'
+}finally{
+  $resolved=[IO.Path]::GetFullPath($fixture);$prefix=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\'
+  if(!$resolved.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetFileName($resolved)-notlike 'gpt-niang-expression-*'){throw 'Unsafe expression fixture cleanup path.'}
+  if(Test-Path -LiteralPath $fixture){Remove-Item -LiteralPath $fixture -Recurse -Force}
+}
