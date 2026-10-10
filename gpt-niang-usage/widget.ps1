@@ -134,12 +134,26 @@ function Set-Facing {
   $script:ui.MenuButton.RenderTransformOrigin=[Windows.Point]::new(0.5,0.5)
   $script:ui.MenuButton.RenderTransform=[Windows.Media.ScaleTransform]::new($factor,1)
 }
-function Set-Appearance {
-  $actual=$script:scale
-  if($script:hostHandle -and $script:hostHandle-ne [IntPtr]::Zero -and [GptWidgetNative]::IsWindow($script:hostHandle)){
-    $frame=[GptWidgetNative]::Frame($script:hostHandle);$dpi=[GptWidgetNative]::GetDpiForWindow($script:hostHandle)/96.0
-    if($dpi-gt 0 -and $frame.Right-gt $frame.Left -and $frame.Bottom-gt $frame.Top){$actual=[Math]::Min($actual,[Math]::Min(($frame.Right-$frame.Left)/$dpi/$script:designWidth,($frame.Bottom-$frame.Top)/$dpi/$script:designHeight))}
+function Get-WidgetAdaptiveLayout([double]$HostWidth,[double]$HostHeight,[double]$DpiScale,[double]$RequestedScale,[double]$DesignWidth,[double]$DesignHeight,[bool]$WasHidden=$false){
+  foreach($value in @($HostWidth,$HostHeight,$DpiScale,$RequestedScale,$DesignWidth,$DesignHeight)){
+    if($value-le 0 -or [double]::IsNaN($value) -or [double]::IsInfinity($value)){
+      return [pscustomobject]@{visible=$false;scale=0.0;hostWidth=0.0;hostHeight=0.0}
+    }
   }
+  $width=$HostWidth/$DpiScale;$height=$HostHeight/$DpiScale
+  # Cap the complete pose, including its quota/dialogue bubble, before it crowds the host.
+  $actual=[Math]::Min($RequestedScale,[Math]::Min($width*0.25/$DesignWidth,$height*0.40/$DesignHeight))
+  # A small recovery margin prevents flickering around the hide boundary during resizing.
+  $minimumWidth=if($WasHidden){760}else{720};$minimumHeight=if($WasHidden){560}else{520}
+  return [pscustomobject]@{visible=($width-ge $minimumWidth -and $height-ge $minimumHeight);scale=$actual;hostWidth=$width;hostHeight=$height}
+}
+function Set-Appearance($Layout=$null) {
+  $actual=$script:scale
+  if(!$Layout -and $script:hostHandle -and $script:hostHandle-ne [IntPtr]::Zero -and [GptWidgetNative]::IsWindow($script:hostHandle)){
+    $frame=[GptWidgetNative]::Frame($script:hostHandle);$dpi=[GptWidgetNative]::GetDpiForWindow($script:hostHandle)/96.0
+    $Layout=Get-WidgetAdaptiveLayout ($frame.Right-$frame.Left) ($frame.Bottom-$frame.Top) $dpi $script:scale $script:designWidth $script:designHeight ([bool]$script:adaptiveHidden)
+  }
+  if($Layout -and $Layout.scale-gt 0){$actual=$Layout.scale}
   $script:displayScale=$actual
   # Transparent space around the original 350px pose contains press/rebound
   # overshoot without shrinking the character or exposing a rectangular cut.
@@ -475,6 +489,7 @@ $script:lastWorkerProbe=0;$script:lastWorkerStart=0;$script:runtimeClosed=$false
 $script:hostHandle=[GptWidgetNative]::FindCodex();$script:lastPresence=0;$script:lastHostProbe=0;$script:drag=$null
 $script:lastForeground=[IntPtr](-1);$script:foregroundHost=[IntPtr]::Zero;$script:foregroundOwn=$false
 $script:lastPosition=$null;$script:attachedHost=[IntPtr]::Zero;$script:updating=$false
+$script:adaptiveHost=[IntPtr]::Zero;$script:adaptiveHidden=$false
 $interop=New-Object Windows.Interop.WindowInteropHelper($script:window)
 $script:widgetHandle=$interop.EnsureHandle()
 $script:hostFollower=[GptWidgetHostFollower]::new($script:widgetHandle)
@@ -611,17 +626,22 @@ function Tick-Widget {
     elseif($script:hostHandle-eq [IntPtr]::Zero -or ![GptWidgetNative]::IsWindow($script:hostHandle)){$script:hostHandle=[IntPtr]::Zero;$script:lastHostProbe=0;$script:lastPosition=$null}
   }
   if($script:hostHandle-eq [IntPtr]::Zero -and $now-$script:lastHostProbe-gt 1000){$script:hostHandle=[GptWidgetNative]::FindCodex();$script:lastHostProbe=$now}
-  $visible=$script:hostHandle-ne [IntPtr]::Zero -and [GptWidgetZOrderNative]::VisibleSurface($script:hostHandle) -and ![GptWidgetNative]::IsIconic($script:hostHandle)
+  $layout=$null
+  if($script:hostHandle-ne [IntPtr]::Zero -and [GptWidgetNative]::IsWindow($script:hostHandle)){
+    if($script:adaptiveHost-ne $script:hostHandle){$script:adaptiveHost=$script:hostHandle;$script:adaptiveHidden=$false}
+    $frame=[GptWidgetNative]::Frame($script:hostHandle);$dpi=[GptWidgetNative]::GetDpiForWindow($script:hostHandle)/96.0
+    if($dpi-le 0){$dpi=1}
+    $layout=Get-WidgetAdaptiveLayout ($frame.Right-$frame.Left) ($frame.Bottom-$frame.Top) $dpi $script:scale $script:designWidth $script:designHeight $script:adaptiveHidden
+    $script:adaptiveHidden=!$layout.visible
+  }
+  $visible=$layout -and $layout.visible -and [GptWidgetZOrderNative]::VisibleSurface($script:hostHandle) -and ![GptWidgetNative]::IsIconic($script:hostHandle)
   if($visible){
     if($script:attachedHost-ne $script:hostHandle){
       $script:attachedHost=$script:hostHandle;$script:lastPosition=$null
     }
+    if(!$script:drag -and [Math]::Abs($script:displayScale-$layout.scale)-gt 0.001){Set-Appearance $layout}
     if(!$script:window.IsVisible){$script:window.Show();$script:lastPosition=$null;Request-Refresh}
     if(!$script:drag){
-      $frame=[GptWidgetNative]::Frame($script:hostHandle);$dpi=[GptWidgetNative]::GetDpiForWindow($script:hostHandle)/96.0
-      if($dpi-le 0){$dpi=1}
-      $fitted=[Math]::Min($script:scale,[Math]::Min(($frame.Right-$frame.Left)/$dpi/$script:designWidth,($frame.Bottom-$frame.Top)/$dpi/$script:designHeight))
-      if([Math]::Abs($script:displayScale-$fitted)-gt 0.001){Set-Appearance}
       $w=[int]($script:designWidth*$script:displayScale*$dpi);$h=[int]($script:designHeight*$script:displayScale*$dpi)
       if($script:anchor-eq 'left'){$x=[int]($frame.Left+$script:offsetLeft*$dpi)}
       elseif($script:anchor-eq 'free'){
