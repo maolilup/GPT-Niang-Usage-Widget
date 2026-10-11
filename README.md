@@ -2,16 +2,20 @@
 
 让一只白发紫瞳的小龙娘，陪你看 Codex 的剩余额度。
 
-**Windows / macOS 桌面挂件 · 自动识别套餐与额度窗口 · 中文语录 · 当前版本 1.3.1**
+**Windows / macOS 桌面挂件 · 自动识别套餐与额度窗口 · 中文语录**
 
-[**下载最新版**](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/latest) · [Windows 安装](#windows-安装) · [macOS 安装](#macos-安装) · [更新记录](更新记录.md) · [反馈问题](https://github.com/T7moris/GPT-Niang-Usage-Widget/issues/new)
+本 fork 的 [`feature/widget-expressions` 分支](https://github.com/maolilup/GPT-Niang-Usage-Widget/tree/feature/widget-expressions) 加入了 **Windows 表情与手势、110 句配套对话、常态定时随机对话和窗口自适应**。这些功能需要安装本分支源码；下面的上游 1.3.1 Release 安装包不包含本 fork 的新增功能。macOS 仍使用原有角色与交互；从本分支构建时会使用共享的 110 句语录，但没有表情切换、定时对话或本次自适应功能。
+
+[**安装本 fork（Windows）**](#安装本-forkwindows) · [上游稳定版下载](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/latest) · [Windows 表情与对话](#windows-表情与对话) · [macOS 安装](#macos-安装) · [上游更新记录](更新记录.md)
 
 <img src="gpt-niang-usage/assets/gpt-dragon-niang-bust.png" alt="无嘴巴的白发龙娘半身形象" width="240">
 
 ## 能做什么
 
-- **点角色看额度**：按接口实际返回的窗口显示剩余百分比，例如 5 小时、每周、30 天；单个窗口在原气泡内居中，横条越满，剩余额度越多。成功查询时折叠未返回的整条窗口；查询失败会显示异常，重置时间为空时仍保留百分比。
+- **点角色看额度**：Windows 连续点击按「额度 → 对话 → 额度」循环，收起后的第一次点击先显示额度。按接口实际返回的窗口显示剩余百分比，例如 5 小时、每周、30 天；单个窗口在原气泡内居中，横条越满，剩余额度越多。成功查询时折叠未返回的整条窗口；查询失败会显示异常，重置时间为空时仍保留百分比。
 - **点气泡看语录**：再点收起，显示完成约 5 秒后也会自动收起；支持编辑自己的语录。
+- **Windows 表情与手势**：默认表情加 10 款差分，台词逐句配套表情；常态也会缓慢切换表情与手势。低额度时单独显示担忧表情，手动进入对话仍按台词配表情。
+- **Windows 定时随机对话**：默认开启，在 Codex 位于前台、气泡收起且没有操作挂件时，等待随机 45～90 秒说一句，显示约 5 秒。低额度、隐藏、切换到其他应用或打开设置时暂停；右键可关闭。
 - **按压与回弹**：半身角色、分段气泡动画和轻提示音，可调整音量或静音。
 - **拖动与缩放**：靠近左右边缘吸附，角色面向窗口内侧，文字保持正向。Windows 将设置大小作为上限，挂件连同气泡最多占主窗口宽度的25%、高度的40%；缩窗时自动缩小，放大时恢复，保留原大小偏好。
 - **跟随主窗口**：失去焦点时保留；其他窗口覆盖主窗口时，也会覆盖挂件。最小化或隐藏主窗口后挂件隐藏。Mac 可在设置中关闭跟随，让挂件留在桌面。
@@ -44,14 +48,30 @@ node /Applications/GPTNiangMac.app/Contents/Resources/Backend/runtime/detect-pla
 
 两边都需要 **Node.js 20 或更新版本**，以及已安装并用 ChatGPT 账号登录的 **Codex 桌面端**。下载包不附带 Node.js；缺少时请先从 [Node.js 官方网站](https://nodejs.org/) 安装。
 
-在 [Release 下载页](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/latest) 的 **Assets** 中选择自己的系统：
+### 安装本 fork（Windows）
+
+下载 [`feature/widget-expressions` 分支 ZIP](https://github.com/maolilup/GPT-Niang-Usage-Widget/archive/refs/heads/feature/widget-expressions.zip)，完整解压并保留 `.agents`、`gpt-niang-usage` 和根目录脚本，再双击 **`安装GPT娘.cmd`**。Windows 源码已包含脚本和图片，可直接安装，不需要编译、管理员权限或 git。
+
+也可用 git 获取这个分支，在仓库根目录运行安装器：
+
+```powershell
+git clone --branch feature/widget-expressions https://github.com/maolilup/GPT-Niang-Usage-Widget.git
+cd GPT-Niang-Usage-Widget
+.\安装GPT娘.cmd
+```
+
+已有安装请先备份自定义内容，将本分支文件覆盖到**原安装目录**，再运行安装器；偏好与自定义语录会保留。若旧的自定义列表遮住了新增台词，可在「编辑我的语录」中选择「恢复内置语录」。具体更新与迁移方式见[更新、移动与卸载](#更新移动与卸载)。
+
+### 上游稳定版安装包
+
+在 [上游 Release 下载页](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/latest) 的 **Assets** 中选择自己的系统。下表为上游 1.3.1，Windows 表情与定时对话等 fork 功能请使用上面的分支安装方式。
 
 | 系统 | v1.3.1 安装包 | 安装入口 |
 | --- | --- | --- |
 | Windows 10 / 11 | [gpt-niang-usage-widget-v1.3.1-windows.zip](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/download/v1.3.1/gpt-niang-usage-widget-v1.3.1-windows.zip) | 解压后运行 `安装GPT娘.cmd` |
 | macOS 13+，Apple Silicon / Intel | [gpt-niang-usage-widget-v1.3.1-macos-universal.zip](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/download/v1.3.1/gpt-niang-usage-widget-v1.3.1-macos-universal.zip) | 解压后打开 `GPTNiangMac.app` |
 
-GitHub 自动附带的 **Source code** 和 **Code → Download ZIP** 是源码，不是上述安装包。Mac 下载包内已包含通用应用，不需要 Swift 或 Xcode；Intel 和较旧 macOS 的实际界面表现仍需真机验证。尚无 Linux 版本。
+GitHub 自动附带的 **Source code** 和 **Code → Download ZIP** 是源码，不是上述 Release 安装包。Windows 本分支源码可直接运行安装脚本；macOS 源码需要构建。Mac Release 包内已包含通用应用，不需要 Swift 或 Xcode；Intel 和较旧 macOS 的实际界面表现仍需真机验证。尚无 Linux 版本。
 
 ### Windows 安装
 
@@ -74,7 +94,7 @@ Mac 的位置跟随目标为 60 Hz，仍使用轮询，不能保证拖动时零�
 
 ### 安装包校验（建议）
 
-同一 [v1.3.1 Release](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/tag/v1.3.1) 的 **[SHA256SUMS.txt](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/download/v1.3.1/SHA256SUMS.txt)** 包含两个包的校验值。下载后计算自己的安装包哈希，与文件中**同名文件**的一行比较。
+同一上游 [v1.3.1 Release](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/tag/v1.3.1) 的 **[SHA256SUMS.txt](https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/download/v1.3.1/SHA256SUMS.txt)** 包含两个 Release 包的校验值，不适用于本 fork 的源码 ZIP 或自行打包的文件。下载后计算自己的 Release 安装包哈希，与文件中**同名文件**的一行比较。
 
 Windows，在 PowerShell 中运行：
 
@@ -94,7 +114,11 @@ shasum -a 256 gpt-niang-usage-widget-v1.3.1-macos-universal.zip
 
 把对应系统的这段发给能在你电脑上执行命令的 AI。
 
-**Windows：**
+**本 fork（Windows，包含表情与定时对话）：**
+
+> 从 https://github.com/maolilup/GPT-Niang-Usage-Widget 的 feature/widget-expressions 分支获取完整源码，检查 Node.js 20+ 和 Codex 的 ChatGPT 登录状态，保留 .agents 与 gpt-niang-usage 目录，在长期保留的安装位置运行根目录的安装GPT娘.cmd。已有安装请先备份并覆盖原目录，保留个人偏好和自定义语录。
+
+**上游稳定版 Windows：**
 
 > 从 https://github.com/T7moris/GPT-Niang-Usage-Widget/releases/latest 下载 Windows 安装包与 SHA256SUMS.txt，先核对来源和哈希，再完整解压到长期保留的位置（例如 `%LOCALAPPDATA%\Programs\GPTNiangUsage`），运行 `安装GPT娘.cmd` 并告诉我结果。先检查 Node.js 20+ 和 Codex 的 ChatGPT 登录状态。
 
@@ -106,22 +130,44 @@ shasum -a 256 gpt-niang-usage-widget-v1.3.1-macos-universal.zip
 
 | 操作 | 效果 |
 | --- | --- |
-| 点角色 | 查看剩余额度；已在额度页时重新计时 |
+| Windows：点角色 | 收起时先看额度；继续点击按「额度 → 对话 → 额度」循环 |
+| Mac：点角色 | 查看剩余额度；已在额度页时重新计时 |
 | 点额度气泡 | 切换到随机语录 |
 | 再点语录气泡 | 收起气泡 |
 | 拖动角色 | 调整在主窗口内的位置 |
-| 右键角色 | 打开设置，调整大小、声音、语录与位置 |
+| 右键角色 | 打开设置，调整大小、声音、语录与位置；Windows 还可选择表情与开关定时随机对话 |
 | Windows：双击 `打开GPT娘.cmd` | 手动恢复显示；重复打开不会叠加第二只 |
 | Windows：菜单选择「退出 GPT 娘」 | 本次主窗口会话中退出，下次重开主窗口恢复 |
 | Windows：双击 `停用GPT娘.cmd` | 停用自动显示，移除任务、启动项与插件登记，保留程序文件与偏好 |
 | Mac：双击角色或从菜单栏进入设置 | 调整外观、窗口跟随和登录启动 |
 | Mac：菜单选择「退出 GPT 娘」 | 退出应用和后台 helper；需重新打开 `.app` 才会再次显示 |
 
-内置语录已同步为作者确认的 **33 句**，包括「高性能↓」「我不是吃白饭的大肥鱼」「我是啥龙？」和三句 token／储存台词。本次直接更新 1.3.1 安装包，版本号不变；重新下载时请核对最新 `SHA256SUMS.txt`。
+本分支内置 **110 句**语录，保留原有 33 句并新增 77 句；Windows 的 11 种表情各有 10 句配套台词。上游 1.3.1 安装包仍是原来的语录与交互。
 
 升级会保留各台电脑的自定义语录。若要使用这份内置台词池，在语录设置里选择「恢复内置语录」（Mac 为「恢复默认」）；恢复前请备份自行添加的句子，Windows会自动保留旧列表备份。自定义文件只保存在本机，不会随账户同步到另一台电脑。
 
 语录变色彩蛋默认按每句独立抽取：全挂件变色 **0.5%**、仅文字变色 **3%**、原色 **96.5%**。
+
+### Windows 表情与对话
+
+右键角色，在「表情与动作」里选择**自动表情**，即可按台词、额度与常态切换；也可固定某款表情，选择会在重启后保留。固定表情时，台词不会覆盖你的选择。
+
+| 表情或动作 | 配套台词示例 |
+| --- | --- |
+| 双拳欢呼 | 小小的胜利，也要认真庆祝！ |
+| 合掌安慰 | 合起手给你打气，这次也陪你慢慢来。 |
+| 思考 | 把条件列出来，答案也许就藏在里面。 |
+| 挥手 | 挥挥手，给认真工作的你。 |
+| 害羞 | 谢谢你想起我。嗯，我听到了。 |
+| 担忧 | 先确认能恢复，再动这份文件吧。 |
+
+另有默认、开心、惊讶、困倦和抱臂鼓脸。内置台词使用逐句指定的表情；自定义台词优先匹配已知内置句子，否则按「休息」「加油」「思考」等关键词选择，无法匹配时使用开心表情。语录按权重抽取，多于一句时避免连续重复。
+
+**低额度提醒与对话分别处理。** 最新有效额度中任一窗口剩余不足 20%（包括 0%）时，常态和额度页单独显示担忧表情；手动进入对话页后，按当前台词展示配套表情，离开对话再恢复提醒。查询异常、过期快照和已经到达重置时刻的数据不会触发低额度表情。
+
+**「定时随机对话」默认开启。** Codex 位于前台、挂件可见且气泡收起时，等待随机 45～90 秒后直接显示一句语录，使用相应表情，展开完成约 5 秒后收起。点击、拖动或按压挂件会重新计时；打开菜单或编辑器、刷新等待、低额度、主窗口隐藏或过小，以及切换到其他应用时暂停，恢复后重新等待，不会补发积压的对话。自动语录使用本地台词，不调用模型，也不会额外刷新额度。右键取消勾选即可关闭，设置会保留。
+
+**大小设置是上限。** 挂件连同气泡最多占 Codex 主窗口宽度的 25%、高度的 40%；缩小窗口时同步缩小，扩大后恢复到你的设置。窗口宽不足 720 或高不足 520 逻辑像素时隐藏，扩大到至少 760×560 后恢复。系统缩放与跨屏 DPI 会自动换算，原有大小偏好不会被改写。
 
 ## 数据与隐私
 
@@ -141,7 +187,7 @@ shasum -a 256 gpt-niang-usage-widget-v1.3.1-macos-universal.zip
 | Windows | `%LOCALAPPDATA%\GPTNiangUsage\state` |
 | macOS | `~/Library/Application Support/GPTNiangUsage` |
 
-`installation.json` 由本机生成，不随安装包分发。本仓库不包含本机安装配置、账户快照或聊天截图；只发布作者确认的内置语录，不上传用户数据目录里的自定义文件。
+`installation.json` 由本机生成，不随安装包分发。本仓库不包含本机安装配置、账户快照或聊天截图；内置语录来源见[语录许可](gpt-niang-usage/assets/quotes-LICENSE.txt)，不上传用户数据目录里的自定义文件。
 
 ## 更新、移动与卸载
 
@@ -203,6 +249,16 @@ Windows 上继续运行安装、生命周期与 WPF 测试：
 ```powershell
 npm run test:windows
 ```
+
+Windows 测试还覆盖表情与台词配对、点击循环、定时对话的暂停与恢复、110 句气泡排版、自适应尺寸及跨 DPI 缩放。CI 会准备隔离的 Codex 可执行文件测试夹具，安装测试不依赖真实账号额度。
+
+从仓库根目录构建本分支的 Windows 脚本包（需要 Python 3）：
+
+```powershell
+python scripts/build-release.py
+```
+
+输出位于 `dist/`，附带 `SHA256SUMS.txt`。包名中的 `1.3.1` 沿用源码版本号，自行构建的 fork 包与上游同名 Release 包内容及哈希不同。
 
 只检查 Windows 安装条件，不创建任务、不安装插件（在仓库根目录运行）：
 
