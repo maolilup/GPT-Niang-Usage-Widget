@@ -72,7 +72,7 @@
       <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
     </Ellipse>
     <Image x:Name="Girl" Canvas.Left="142" Canvas.Top="142" Width="208" Height="208" Stretch="UniformToFill" Cursor="Hand"
-           ToolTip="点角色按额度→对话→额度循环；鼠标在头顶来回轻抚可摸头；按住拖动调整位置；右键设置"/>
+           ToolTip="点角色按额度→对话→额度循环；不按鼠标在头顶轻轻来回一次可摸头；按住拖动调整位置；右键设置"/>
     <Button x:Name="MenuButton" Canvas.Left="320" Canvas.Top="162" Width="24" Height="24" Content="☰"
             FontSize="15" Opacity="0" IsHitTestVisible="False" Background="#EDE7F6" ToolTip="挂件设置"/>
   </Canvas>

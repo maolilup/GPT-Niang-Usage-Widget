@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "quotes": [
+    {
+      "text": "额度有点低啦，重要的问题先问吧。",
+      "level": "low",
+      "expression": "worried"
+    },
+    {
+      "text": "先把最想做的事，放到这一轮前面吧。",
+      "level": "low",
+      "expression": "worried"
+    },
+    {
+      "text": "剩余额度不多啦，我陪你省着用。",
+      "level": "low",
+      "expression": "worried"
+    },
+    {
+      "text": "这轮额度快用完啦，先把重要结果存好。",
+      "level": "critical",
+      "expression": "worried"
+    },
+    {
+      "text": "最后一点额度，留给最关键的问题吧。",
+      "level": "critical",
+      "expression": "worried"
+    },
+    {
+      "text": "要不要先理理思路，等额度恢复再继续？",
+      "level": "critical",
+      "expression": "worried"
+    },
+    {
+      "text": "这一轮额度用完啦，等重置后再继续吧。",
+      "level": "empty",
+      "expression": "worried"
+    },
+    {
+      "text": "额度暂时见底啦，先把下一步记下来。",
+      "level": "empty",
+      "expression": "worried"
+    },
+    {
+      "text": "现在先歇一会吧，等额度恢复再找我。",
+      "level": "empty",
+      "expression": "worried"
+    }
+  ]
+}

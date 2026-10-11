@@ -16,6 +16,7 @@ $null=New-Item -ItemType Directory -Path $script:dataDir -Force
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\quote-layout.ps1'),[Text.Encoding]::UTF8)))
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\expressions.ps1'),[Text.Encoding]::UTF8)))
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\headpat.ps1'),[Text.Encoding]::UTF8)))
+. ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\low-quota.ps1'),[Text.Encoding]::UTF8)))
 Initialize-WidgetQuoteLayouts $script:appDir
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase,System.Windows.Forms,System.Drawing
 Add-Type -TypeDefinition @'
@@ -98,6 +99,8 @@ foreach($name in @('Root','Bubble','Tail','TailNear','SceneText','QuotaText','Qu
 Initialize-WidgetExpressions $script:appDir
 Initialize-WidgetHeadpatQuotes $script:appDir
 $script:headpatState=New-WidgetHeadpatState
+Initialize-WidgetLowQuotaQuotes $script:appDir
+$script:lowQuotaState=New-WidgetLowQuotaState
 $script:status=$null
 $script:statusStamp=0
 $script:offsetRight=0.0;$script:offsetBottom=0.0;$script:offsetLeft=$null;$script:anchor='right';$script:side='right';$script:scale=1.0;$script:collapsed=$true
@@ -244,6 +247,16 @@ function Tick-AmbientQuote([long]$Now,[bool]$HostVisible,[bool]$HostActive){
   $script:ambientQuoteState.count++;$script:ambientQuoteState.lastShownAt=$Now
   Reset-AmbientQuoteTimer $Now
 }
+function Show-LowQuotaQuote {
+  $row=Get-WidgetLowQuotaQuote $script:lowQuotaState $script:lowQuotaState.level
+  if($row){Show-WidgetScene 'quote' 'low-quota' -Quote $row.text}
+}
+function Tick-LowQuotaDialogue([long]$Now,[bool]$HostVisible,[bool]$HostActive){
+  $level=Get-WidgetQuotaLevel $script:status $Now
+  if(!$script:collapsed -and $script:sceneOrigin-eq 'low-quota' -and (!$script:autoDialogueEnabled -or $level-in @('normal','unknown'))){Hide-Quota}
+  $ready=$script:autoDialogueEnabled -and $HostVisible -and $HostActive -and $script:window.IsVisible -and $script:collapsed -and !$script:drag -and !$script:expressionState.pressed -and !$script:context.IsOpen -and !($script:quoteEditor -and $script:quoteEditor.IsVisible) -and !($script:colorTriggerEditor -and $script:colorTriggerEditor.IsVisible) -and $script:expressionState.refreshAt-le 0 -and $Now-$script:expressionState.lastActiveAt-ge 1500 -and (!$script:headpatState -or $script:headpatState.strokes-eq 0 -or $Now-$script:headpatState.lastAt-gt 1400)
+  if(Update-WidgetLowQuotaDialogue $script:lowQuotaState $script:status $Now $ready){Show-LowQuotaQuote}
+}
 function Read-DisplayRequest {
   try{
     $request=Get-Content -LiteralPath (Join-Path $script:dataDir 'display-request.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -333,7 +346,7 @@ function Invoke-WidgetHeadpat {
   Show-WidgetScene 'quote' 'headpat' -Quote $row.text
   Animate-Headpat
 }
-function Show-WidgetScene([ValidateSet('quota','quote')][string]$Mode='quota',[ValidateSet('manual','ambient','headpat')][string]$Origin='manual',[string]$Quote=''){
+function Show-WidgetScene([ValidateSet('quota','quote')][string]$Mode='quota',[ValidateSet('manual','ambient','headpat','low-quota')][string]$Origin='manual',[string]$Quote=''){
   if($Origin-eq 'manual'){Invoke-WidgetExpressionEvent 'interact'}
   $script:sceneOrigin=$Origin
   if(!$script:collapsed){if($script:bubbleMode-ne $Mode -or $Quote){Switch-Scene $Mode -Quote $Quote -Origin $Origin}else{Restart-SceneTtl};return}
@@ -630,7 +643,7 @@ $pressUp={param($sender,$event)
   Save-Settings;$script:hostEventTimer.Start();$event.Handled=$true
 }
 $script:ui.Girl.Add_MouseLeftButtonDown($pressDown);$script:ui.Girl.Add_MouseMove($pressMove);$script:ui.Girl.Add_MouseLeftButtonUp($pressUp)
-$script:ui.Girl.Add_MouseLeave({Reset-WidgetHeadpatGesture $script:headpatState})
+$script:ui.Girl.Add_MouseLeave({Suspend-WidgetHeadpatGesture $script:headpatState ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())})
 $script:ui.Girl.Add_LostMouseCapture({
   Invoke-WidgetExpressionEvent 'release'
   if($script:drag){$script:drag=$null;Animate-Press $false;Stop-WidgetAudio;Save-Settings;$script:hostEventTimer.Start()}
@@ -740,6 +753,7 @@ function Tick-Widget {
   if($now-$script:lastPresence-ge 1000){
     Update-Quota
     Read-DisplayRequest
+    Tick-LowQuotaDialogue $now ([bool]$visible) ($script:foregroundHost-eq $script:hostHandle -or $script:foregroundOwn)
     Tick-AmbientQuote $now ([bool]$visible) ($script:foregroundHost-eq $script:hostHandle -or $script:foregroundOwn)
     Update-WidgetExpression $now
     Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};ambientDialogue=@{enabled=$script:autoDialogueEnabled;paused=$script:ambientQuoteState.blocked;nextAt=$script:ambientQuoteState.nextAt;count=$script:ambientQuoteState.count;lastShownAt=$script:ambientQuoteState.lastShownAt};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;origin=$script:sceneOrigin;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}

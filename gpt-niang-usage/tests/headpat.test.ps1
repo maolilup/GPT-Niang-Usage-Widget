@@ -10,23 +10,34 @@ $state=New-WidgetHeadpatState
 Assert-Equal (Update-WidgetHeadpat $state 0.42 0.25 $true $false $now) $false 'One hover cannot trigger a headpat'
 foreach($i in 1..12){Assert-Equal (Update-WidgetHeadpat $state (0.42+($i%2)*0.01) 0.25 $true $false ($now+$i*25)) $false 'Mouse jitter is not stroking'}
 Reset-WidgetHeadpatGesture $state
-foreach($point in @(@(0.38,0),@(0.60,200),@(0.40,400))){Assert-Equal (Update-WidgetHeadpat $state $point[0] 0.25 $true $false ($now+$point[1])) $false 'Wait for three deliberate passes'}
-Assert-Equal (Update-WidgetHeadpat $state 0.61 0.25 $true $false ($now+600)) $true 'Three alternating passes trigger one reaction'
+Assert-Equal (Update-WidgetHeadpat $state 0.46 0.46 $true $false $now) $false 'Begin a gentle stroke over a wider part of the hair'
+Assert-Equal (Update-WidgetHeadpat $state 0.53 0.46 $true $false ($now+900)) $false 'One directional pass does not trigger'
+Assert-Equal (Update-WidgetHeadpat $state 0.46 0.46 $true $false ($now+1800)) $true 'One gentle slow back-and-forth triggers'
 Assert-Equal $state.count 1 'One completed gesture is counted once'
-foreach($i in 1..20){Assert-Equal (Update-WidgetHeadpat $state (0.38+($i%2)*0.23) 0.25 $true $false ($now+600+$i*100)) $false 'Continued strokes cannot spam dialogue during cooldown'}
+foreach($i in 1..20){Assert-Equal (Update-WidgetHeadpat $state (0.38+($i%2)*0.23) 0.25 $true $false ($now+1800+$i*100)) $false 'Continued strokes cannot spam dialogue during cooldown'}
 Assert-Equal $state.count 1 'Cooldown does not count more reactions'
 foreach($scenario in @(@(0.8,$true,$false),@(0.25,$false,$false),@(0.25,$true,$true))){
   $s=New-WidgetHeadpatState
   foreach($i in 0..4){Assert-Equal (Update-WidgetHeadpat $s (0.38+($i%2)*0.23) $scenario[0] $scenario[1] $scenario[2] ($now+$i*200)) $false 'Body, transparent pixels and held buttons cannot trigger'}
 }
 $s=New-WidgetHeadpatState
-foreach($i in 0..4){Assert-Equal (Update-WidgetHeadpat $s (0.38+($i%2)*0.23) 0.25 $true $false ($now+$i*900)) $false 'Separated movements cannot accumulate into a gesture'}
+foreach($i in 0..4){Assert-Equal (Update-WidgetHeadpat $s (0.38+($i%2)*0.23) 0.25 $true $false ($now+$i*1600)) $false 'Separated movements cannot accumulate into a gesture'}
 $s=New-WidgetHeadpatState
 Update-WidgetHeadpat $s 0.38 0.25 $true $false $now|Out-Null
 Update-WidgetHeadpat $s 0.61 0.25 $true $false ($now+200)|Out-Null
 Update-WidgetHeadpat $s 0.90 0.25 $true $false ($now+250)|Out-Null
-Assert-Equal (Update-WidgetHeadpat $s 0.38 0.25 $true $false ($now+400)) $false 'Leaving the head resets accumulated strokes'
-Assert-Equal (Update-WidgetHeadpat $s 0.61 0.25 $true $false ($now+600)) $false 'Reentry requires a new complete gesture'
+Assert-Equal (Update-WidgetHeadpat $s 0.38 0.25 $true $false ($now+700)) $false 'A long departure resets accumulated strokes'
+Assert-Equal (Update-WidgetHeadpat $s 0.61 0.25 $true $false ($now+900)) $false 'Reentry requires a new complete gesture'
+$s=New-WidgetHeadpatState
+Update-WidgetHeadpat $s 0.46 0.25 $true $false $now|Out-Null
+Update-WidgetHeadpat $s 0.53 0.25 $true $false ($now+200)|Out-Null
+Update-WidgetHeadpat $s 0.55 0.25 $false $false ($now+250)|Out-Null
+Suspend-WidgetHeadpatGesture $s ($now+260)
+Assert-Equal (Update-WidgetHeadpat $s 0.46 0.25 $true $false ($now+400)) $true 'A brief transparent gap or mouse leave preserves the gesture'
+$s=New-WidgetHeadpatState
+foreach($point in @(@(0.46,0),@(0.53,1000),@(0.58,2000),@(0.62,3000))){Assert-Equal (Update-WidgetHeadpat $s $point[0] 0.25 $true $false ($now+$point[1])) $false 'Long movement in only one direction cannot trigger'}
+$s=New-WidgetHeadpatState
+foreach($point in @(@(0.46,0),@(0.53,50),@(0.46,100))){Assert-Equal (Update-WidgetHeadpat $s $point[0] 0.25 $true $false ($now+$point[1])) $false 'An instantaneous flick does not trigger'}
 # The same sprite point is recognized across widget sizes and UniformToFill cropping.
 foreach($size in @(104,208,416)){
   $p=ConvertTo-WidgetSpritePoint ($size*0.42) ($size*0.25) $size $size 1254 1254

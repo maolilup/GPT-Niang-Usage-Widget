@@ -32,7 +32,7 @@ function Resolve-WidgetExpressionMode($Mode){
 function Initialize-WidgetQuoteExpressions([string]$AppDir){
   $script:quoteExpressionMap=@{}
   try{
-    foreach($file in @('quotes.json','headpat-quotes.json')){
+    foreach($file in @('quotes.json','headpat-quotes.json','low-quota-quotes.json')){
       if(!(Test-Path -LiteralPath (Join-Path $AppDir ('assets\'+$file)))){continue}
       $quotes=[IO.File]::ReadAllText((Join-Path $AppDir ('assets\'+$file)),[Text.Encoding]::UTF8)|ConvertFrom-Json
       foreach($row in $quotes.quotes){
@@ -124,11 +124,11 @@ function ConvertTo-WidgetExpressionNumber($Value){
   if(![double]::TryParse([string]$Value,[Globalization.NumberStyles]::Float,[Globalization.CultureInfo]::InvariantCulture,[ref]$number) -or [double]::IsNaN($number) -or [double]::IsInfinity($number)){return $null}
   return $number
 }
-function Get-WidgetQuotaExpression($Status,[long]$Now){
-  if(!$Status -or $Status.ok-isnot [bool] -or !$Status.ok -or $Status.queryOk-isnot [bool] -or !$Status.queryOk -or $Status.error){return 'neutral'}
+function Get-WidgetQuotaRemaining($Status,[long]$Now){
+  if(!$Status -or $Status.ok-isnot [bool] -or !$Status.ok -or $Status.queryOk-isnot [bool] -or !$Status.queryOk -or $Status.error){return $null}
   $observed=ConvertTo-WidgetExpressionNumber $Status.observedAt
-  if($null-eq $observed -or $observed-le 0 -or $Now-$observed-lt 0 -or $Now-$observed-gt 180000){return 'neutral'}
-  $low=$false
+  if($null-eq $observed -or $observed-le 0 -or $Now-$observed-lt 0 -or $Now-$observed-gt 180000){return $null}
+  $minimum=$null
   foreach($window in @($Status.windows)){
     if(!$window){continue}
     $remaining=ConvertTo-WidgetExpressionNumber $window.remaining
@@ -137,9 +137,13 @@ function Get-WidgetQuotaExpression($Status,[long]$Now){
       $reset=ConvertTo-WidgetExpressionNumber $window.resetsAt
       if($null-eq $reset -or $reset-le $Now/1000.0){continue}
     }
-    if($remaining-lt 20){$low=$true}
+    if($null-eq $minimum -or $remaining-lt $minimum){$minimum=$remaining}
   }
-  if($low){return 'worried'}
+  return $minimum
+}
+function Get-WidgetQuotaExpression($Status,[long]$Now){
+  $remaining=Get-WidgetQuotaRemaining $Status $Now
+  if($null-ne $remaining -and $remaining-lt 20){return 'worried'}
   return 'neutral'
 }
 function Get-WidgetExpressionName($State,$Status,[long]$Now){

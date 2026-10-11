@@ -18,8 +18,10 @@ $defaults=Get-WidgetQuoteSettings $freshData
 if($defaults.source-ne 'built-in' -or $defaults.error){throw 'A fresh installation must load the bundled quote pool'}
 foreach($row in $defaults.quotes){if(!$script:quoteLayoutMap.ContainsKey($row.text)){throw ('Bundled quote lacks a reviewed layout: '+$row.text)}}
 $headpat=[IO.File]::ReadAllText((Join-Path $app 'assets\headpat-quotes.json'),[Text.Encoding]::UTF8)|ConvertFrom-Json
-$values=@($defaults.quotes.text)+@($headpat.quotes.text)+@('好模型',('自定义测试' * 40))
-foreach($text in @($defaults.quotes.text)+@($headpat.quotes.text)){if($text-match '小龙|GPT\s*娘'){throw 'Dialogue must not address itself by the character name'}}
+$lowQuota=[IO.File]::ReadAllText((Join-Path $app 'assets\low-quota-quotes.json'),[Text.Encoding]::UTF8)|ConvertFrom-Json
+$all=@($defaults.quotes.text)+@($headpat.quotes.text)+@($lowQuota.quotes.text)
+$values=$all+@('好模型',('自定义测试' * 40))
+foreach($text in $all){if($text-match '小龙|GPT\s*娘'){throw 'Dialogue must not address itself by the character name'}}
 function Add-QuoteInk($drawing,[Windows.Media.Matrix]$matrix){
   if($drawing-is [Windows.Media.DrawingGroup]){
     if($drawing.Transform){$next=$drawing.Transform.Value;$next.Append($matrix)}else{$next=$matrix}
