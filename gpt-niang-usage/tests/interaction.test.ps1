@@ -30,16 +30,25 @@ foreach($legacyPreference in @($false,$true)){
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 $appDir=Split-Path $TestRoot -Parent
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $appDir 'runtime\expressions.ps1'),[Text.Encoding]::UTF8)))
-$definition=$ast.Find({param($node)$node-is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name-eq 'Switch-Scene'},$true)
-. ([ScriptBlock]::Create($definition.Extent.Text))
-$script:ui=@{Girl=[Windows.Controls.Image]::new();QuoteText=[Windows.Controls.TextBlock]::new();SceneText=[Windows.Controls.Border]::new()}
+foreach($name in @('Switch-Scene','Apply-Scene','Show-Quota','Hide-Quota')){
+  $definition=$ast.Find({param($node)$node-is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name-eq $name},$true)
+  . ([ScriptBlock]::Create($definition.Extent.Text))
+}
+$script:window=[Windows.Markup.XamlReader]::Parse([IO.File]::ReadAllText((Join-Path $appDir 'widget.xaml'),[Text.Encoding]::UTF8))
+$script:ui=@{}
+foreach($name in @('Girl','QuoteText','SceneText','Bubble','Tail','TailNear','QuotaText','Refresh','LiveDot')){$script:ui[$name]=$script:window.FindName($name)}
 $script:status=$null;$script:sceneRevision=0;$script:sceneTimer=$null;$script:collapsed=$true;$script:bubbleMode='quota'
 $script:dialogues=[Collections.Generic.Queue[string]]::new()
-foreach($text in @('Ciallo～ 今天也请多关照。','小小的成功，也值得开心一下。','休息一下，灵感也要充电。','真当我是便宜货啊...')){$script:dialogues.Enqueue($text)}
+foreach($text in @('Ciallo～ 今天也请多关照。','小小的成功，也值得开心一下。','休息一下，灵感也要充电。','真当我是便宜货啊...','不会也没关系，从一个例子开始。')){$script:dialogues.Enqueue($text)}
 function Get-WidgetBubbleQuote($data){return $script:dialogues.Dequeue()}
 function Fit-QuoteText {$script:ui.QuoteText.Tag=$script:ui.QuoteText.Text;$script:ui.QuoteText.Text=$script:ui.QuoteText.Text.Replace('，',",`n")}
 function Animate-Value {}
-function Apply-Scene {$script:appliedMode=$script:bubbleMode}
+function Set-AnimatedValue {}
+function Set-WidgetSceneLayout {$script:appliedMode=$script:bubbleMode}
+function Update-BubbleTooltip {}
+function Save-Settings {}
+function Request-Refresh {Invoke-WidgetExpressionEvent 'refresh'}
+function Set-BubbleState {}
 function Restart-SceneTtl {}
 function Wait-SceneRender {
   $frame=[Windows.Threading.DispatcherFrame]::new()
@@ -51,23 +60,35 @@ $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 Initialize-WidgetExpressions $appDir ($now-12000)
 Update-WidgetExpression $now
 Assert-Equal $script:expressionCurrent happy 'Begin with a visible ambient smile'
-foreach($expected in @('happy','wave','wave','cheer','cheer','sleepy')){
+$script:status=@{ok=$true;queryOk=$true;observedAt=$now;windows=@(@{remaining=10;resetsAt=[Math]::Floor($now/1000)+3600})}
+foreach($expected in @('worried','wave','worried','cheer','worried','sleepy')){
   Invoke-WidgetExpressionEvent 'press'
   Invoke-WidgetExpressionEvent 'release'
   $before=$script:expressionCurrent
+  $wasCollapsed=$script:collapsed
   Click-Character
-  Assert-Equal $script:expressionCurrent $before 'Starting a transition does not flash a new sprite'
+  if(!$wasCollapsed){Assert-Equal $script:expressionCurrent $before 'Starting a transition does not flash a new sprite'}
   Wait-SceneRender
-  Assert-Equal $script:expressionCurrent $expected 'Only rendered dialogue changes the sprite to its paired gesture'
+  Assert-Equal $script:expressionCurrent $expected 'Rendered dialogue uses its paired gesture; quota uses its own reminder'
 }
 Assert-Equal $script:ui.QuoteText.Tag '休息一下，灵感也要充电。' 'Pairing uses the original text before layout inserts line breaks'
-Click-Character # Return to quota and keep sleepy.
+Click-Character # Return to the independent low-quota reminder.
 Wait-SceneRender
 Click-Character # Pending pout dialogue is cancelled before it is shown.
 Click-Character
 Wait-SceneRender
 Assert-Equal $script:bubbleMode quota 'Rapid cancellation ends on quota'
 Assert-Equal $script:appliedMode quota 'Only the latest scene timer presents content'
-Assert-Equal $script:expressionCurrent sleepy 'A cancelled dialogue cannot change the visible sprite'
+Assert-Equal $script:expressionCurrent worried 'A cancelled dialogue cannot change the quota reminder'
+Click-Character
+Wait-SceneRender
+Assert-Equal $script:expressionCurrent comfort 'A reassuring dialogue replaces the low-quota reminder while it is visible'
+Hide-Quota
+Assert-Equal $script:expressionCurrent worried 'The production close handler immediately restores the quota reminder'
+$script:status=@{ok=$true;queryOk=$true;observedAt=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();windows=@(@{remaining=80;resetsAt=[Math]::Floor($now/1000)+3600})}
+Update-WidgetExpression
+Assert-Equal $script:expressionCurrent neutral 'After quota recovers a closed dialogue does not leak its expression'
 if($script:sceneTimer){$script:sceneTimer.Stop()}
-Write-Output 'PASS: quota/dialogue cycle, paired dialogue gestures, retained quota expressions, canonical text and cancelled rapid scene transitions'
+if($script:closeTimer){$script:closeTimer.Stop()}
+$script:window.Close()
+Write-Output 'PASS: quota/dialogue cycle, independent low-quota reminder, paired dialogue gestures, scene close, canonical text and cancelled rapid transitions'

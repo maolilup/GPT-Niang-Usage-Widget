@@ -54,6 +54,7 @@ for($offset=120200;$offset-le 121000;$offset+=100){
 Register-WidgetExpressionEvent $state 'quote' ($now+121100) -Quote '小小的成功，也值得开心一下。'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+121100)) cheer 'A new dialogue changes the matching gesture even inside the previous hold'
 Register-WidgetExpressionEvent $state 'click' ($now+121200) -CurrentExpression cheer
+Register-WidgetExpressionEvent $state 'quota' ($now+121200)
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+121200)) cheer 'Returning to quota retains the last dialogue pose'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+126599)) cheer 'Dialogue pose lasts through the bubble fade and full reading time'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+126600)) neutral 'After the dialogue hold, daily variation resumes'
@@ -69,17 +70,41 @@ Assert-Equal $script:expressionCurrent happy 'Real quota click does not reset an
 Invoke-WidgetExpressionEvent 'quote' ($now+12100) -Quote '我在看额度。你在看我。各忙各的。'
 Assert-Equal $script:expressionCurrent shy 'Real dialogue event applies the paired sprite'
 Invoke-WidgetExpressionEvent 'click' ($now+12200)
+Invoke-WidgetExpressionEvent 'quota' ($now+12200)
 Assert-Equal $script:expressionCurrent shy 'Real quota return does not change the paired sprite'
+
+# Quota reminders and dialogue poses belong to separate display states.
+$state=New-WidgetExpressionState $now
+$low=New-Snapshot 10
+Register-WidgetExpressionEvent $state 'click' $now -CurrentExpression happy
+Assert-Equal (Get-WidgetExpressionName $state $low ($now+1)) worried 'Low quota immediately overrides a preserved ambient smile'
+Register-WidgetExpressionEvent $state 'refresh' ($now+2)
+Assert-Equal (Get-WidgetExpressionName $state $low ($now+3)) worried 'Refreshing does not interrupt an existing low-quota reminder'
+Register-WidgetExpressionEvent $state 'quote' ($now+4) -Quote '小小的成功，也值得开心一下。'
+Assert-Equal (Get-WidgetExpressionName $state $low ($now+5)) cheer 'Visible dialogue owns its paired expression even at low quota'
+Register-WidgetExpressionEvent $state 'interact' ($now+5000) -CurrentExpression cheer
+Assert-Equal (Get-WidgetExpressionName $state $low ($now+12000)) cheer 'Extending a dialogue cannot let its paired expression time out'
+Register-WidgetExpressionEvent $state 'press' ($now+12001) -CurrentExpression cheer
+Assert-Equal (Get-WidgetExpressionName $state $low ($now+12500)) cheer 'A held press cannot replace a visible dialogue pose'
+Register-WidgetExpressionEvent $state 'release' ($now+12501) -CurrentExpression cheer
+Register-WidgetExpressionEvent $state 'quota' ($now+12502)
+Assert-Equal (Get-WidgetExpressionName $state $low ($now+12502)) worried 'Returning to quota immediately restores its independent reminder'
+Register-WidgetExpressionEvent $state 'quote' ($now+12503) -Quote 'Ciallo～ 今天也请多关照。'
+Register-WidgetExpressionEvent $state 'close' ($now+12504)
+Assert-Equal (Get-WidgetExpressionName $state $low ($now+12504)) worried 'Closing dialogue restores the low-quota expression without another click'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 50) ($now+12505)) neutral 'Recovered quota resumes normal idle without leaking the dialogue pose'
 
 $state=New-WidgetExpressionState $now
 Register-WidgetExpressionEvent $state 'refresh' $now
-$old=New-Snapshot 10 ($now-1)
+$old=New-Snapshot 90 ($now-1)
 Assert-Equal (Get-WidgetExpressionName $state $old ($now+1)) thinking 'Old cached status cannot complete a new refresh'
 Register-WidgetExpressionEvent $state 'quote' ($now+2) -Quote '小小的成功，也值得开心一下。'
 Assert-Equal (Get-WidgetExpressionName $state $old ($now+2)) cheer 'Dialogue reaction takes precedence over refresh'
 Register-WidgetExpressionEvent $state 'press' ($now+3)
 Assert-Equal (Get-WidgetExpressionName $state $old ($now+452)) cheer 'Brief presses retain their reaction'
-Assert-Equal (Get-WidgetExpressionName $state $old ($now+453)) surprised 'A held press takes precedence after 450 milliseconds'
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+453)) cheer 'Visible dialogue also takes precedence over a held press'
+Register-WidgetExpressionEvent $state 'quota' ($now+454)
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+454)) surprised 'Outside dialogue a held press takes precedence after 450 milliseconds'
 $state.mode='shy'
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+130000)) shy 'Manual choice wins over press, refresh, low quota and idle'
 Register-WidgetExpressionEvent $state 'release' ($now+130000)
@@ -91,22 +116,22 @@ Assert-Equal (Get-WidgetExpressionName $state $null ($now+300000)) sleepy 'Retur
 $state=New-WidgetExpressionState $now
 Register-WidgetExpressionEvent $state 'refresh' $now
 Assert-Equal (Get-WidgetExpressionName $state $old ($now+7999)) thinking 'Refresh survives just before eight-second deadline'
-Assert-Equal (Get-WidgetExpressionName $state $old ($now+8000)) worried 'Refresh expires at eight seconds and resumes quota state'
+Assert-Equal (Get-WidgetExpressionName $state $old ($now+8000)) neutral 'Refresh expires at eight seconds and resumes normal state'
 $state=New-WidgetExpressionState $now
 Register-WidgetExpressionEvent $state 'refresh' $now
-Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+1)) pout 'Observation at the request timestamp completes refresh'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+1)) worried 'Observation at the request timestamp completes refresh with a low-quota reminder'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+2)) neutral 'Completed refresh cannot return to thinking after status loss'
 
 $state=New-WidgetExpressionState $now
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 19.9) $now) worried 'Fresh below twenty percent is worried'
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 20) $now) neutral 'Twenty percent is normal'
-Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) $now) pout 'Depleted quota is pout'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) $now) worried 'Depleted quota uses the same independent worried reminder'
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 10) ($now+17999)) worried 'Low quota keeps its main mood for a calm hold'
-Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 10) ($now+18000)) comfort 'Low quota occasionally uses a comforting gesture'
-Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+18000)) comfort 'Depleted quota also keeps some ambient movement'
-Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+24000)) pout 'Ambient gesture returns to the depleted mood'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 10) ($now+18000)) worried 'Low quota stays worried instead of rotating into an unrelated gesture'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+18000)) worried 'Depleted quota also stays worried'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+24000)) worried 'Idle phases do not replace the quota reminder'
 $mixed=New-Snapshot 10;$mixed.windows+=@{remaining=0;resetsAt=$null}
-Assert-Equal (Get-WidgetExpressionName $state $mixed $now) pout 'Depletion wins across mixed windows'
+Assert-Equal (Get-WidgetExpressionName $state $mixed $now) worried 'Any low window triggers the quota reminder'
 foreach($value in @($null,'',-1,101,'bad',[double]::NaN,[double]::PositiveInfinity,$true,@(0,1))){
   Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot $value) $now) neutral 'Malformed remaining never becomes zero'
 }
@@ -125,7 +150,7 @@ foreach($snapshot in @(
 }
 Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 10 ($now-180000)) $now) worried 'Freshness boundary includes 180 seconds'
 Register-WidgetExpressionEvent $state 'click' $now
-Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+3000)) pout 'Transient expiry restores quota immediately'
+Assert-Equal (Get-WidgetExpressionName $state (New-Snapshot 0) ($now+3000)) worried 'Transient activity does not replace the quota reminder'
 
 # Real PNGs exercise WPF decoding, alpha caches and shared colour masks.
 Initialize-WidgetExpressions $appDir $now

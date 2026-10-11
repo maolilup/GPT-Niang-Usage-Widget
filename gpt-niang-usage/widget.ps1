@@ -239,6 +239,8 @@ function Apply-Scene {
   $script:ui.QuoteText.Visibility=if($quota){[Windows.Visibility]::Collapsed}else{[Windows.Visibility]::Visible}
   $script:ui.Refresh.Visibility=$script:ui.QuotaText.Visibility;$script:ui.LiveDot.Visibility=[Windows.Visibility]::Collapsed
   Update-BubbleTooltip
+  if($quota){Invoke-WidgetExpressionEvent 'quota'}
+  else{Invoke-WidgetExpressionEvent 'quote' -Quote ([string]$script:ui.QuoteText.Tag)}
 }
 function Update-BubbleTooltip {
   $copy=if($script:bubbleMode-eq 'quote'){$script:ui.QuoteText.Tag}else{
@@ -275,7 +277,6 @@ function Switch-Scene([string]$mode){
     $timer.Stop()
     if($timer-eq $script:sceneTimer -and !$script:collapsed){
       Apply-Scene
-      if($script:bubbleMode-eq 'quote'){Invoke-WidgetExpressionEvent 'quote' -Quote ([string]$script:ui.QuoteText.Tag)}
       Animate-Value $script:ui.SceneText ([Windows.UIElement]::OpacityProperty) 1 160
       Restart-SceneTtl 160
     }
@@ -317,6 +318,7 @@ function Show-Quota {
 function Hide-Quota {
   if($script:collapsed){return}
   $script:collapsed=$true;$script:bubbleEpoch++
+  Invoke-WidgetExpressionEvent 'close'
   if($script:widgetColors){Update-WidgetColorScene}
   $script:sceneDeadline=0
   if($script:resetPhaseTimer){$script:resetPhaseTimer.Stop();$script:resetPhaseTimer=$null}

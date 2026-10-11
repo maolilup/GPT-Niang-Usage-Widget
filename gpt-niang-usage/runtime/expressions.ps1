@@ -44,20 +44,24 @@ function Get-WidgetQuoteExpression([string]$Quote){
   return 'happy'
 }
 function New-WidgetExpressionState([long]$Now){
-  return @{mode='auto';lastActiveAt=$Now;pressed=$false;pressedAt=0L;reaction='';reactionUntil=0L;refreshAt=0L}
+  return @{mode='auto';lastActiveAt=$Now;pressed=$false;pressedAt=0L;quoteExpression='';reaction='';reactionUntil=0L;refreshAt=0L}
 }
-function Register-WidgetExpressionEvent($State,[ValidateSet('interact','press','release','click','quote','refresh')][string]$Kind,[long]$Now,[string]$Quote='',[string]$CurrentExpression=''){
+function Register-WidgetExpressionEvent($State,[ValidateSet('interact','press','release','click','quote','quota','close','refresh')][string]$Kind,[long]$Now,[string]$Quote='',[string]$CurrentExpression=''){
   $State.lastActiveAt=$Now
   switch($Kind){
     'press' {if(!$State.pressed){$State.pressedAt=$Now};$State.pressed=$true}
     'release' {$State.pressed=$false}
     'refresh' {$State.refreshAt=$Now}
+    'quota' {$State.quoteExpression=''}
+    'close' {$State.quoteExpression='';$State.reaction='';$State.reactionUntil=0L}
   }
   if($Kind-eq 'quote'){
-    $State.reaction=Get-WidgetQuoteExpression $Quote
-    # Keep the paired pose through the 280 ms transition and five-second reading period.
+    # The rendered dialogue owns its pose until the scene changes or closes.
+    $State.quoteExpression=Get-WidgetQuoteExpression $Quote
+    $State.reaction=$State.quoteExpression
+    # Retain the previous pose briefly on a normal quota page, without masking low quota.
     $State.reactionUntil=$Now+5500
-  }elseif($Kind-ne 'refresh' -and $CurrentExpression-in @($script:expressionRegistry.name)){
+  }elseif($Kind-notin @('refresh','close') -and $CurrentExpression-in @($script:expressionRegistry.name)){
     # Resetting the idle clock must not reset the visible pose on a quota click or short press.
     $State.reaction=$CurrentExpression
     $State.reactionUntil=[Math]::Max($State.reactionUntil,$Now+3000)
@@ -100,7 +104,6 @@ function Get-WidgetQuotaExpression($Status,[long]$Now){
       $reset=ConvertTo-WidgetExpressionNumber $window.resetsAt
       if($null-eq $reset -or $reset-le $Now/1000.0){continue}
     }
-    if($remaining-eq 0){return 'pout'}
     if($remaining-lt 20){$low=$true}
   }
   if($low){return 'worried'}
@@ -113,14 +116,12 @@ function Get-WidgetExpressionName($State,$Status,[long]$Now){
     $observed=ConvertTo-WidgetExpressionNumber $Status.observedAt
     if(($null-ne $observed -and $observed-ge $State.refreshAt) -or $Now-ge $State.refreshAt+8000){$State.refreshAt=0L}
   }
+  if($State.quoteExpression){return $State.quoteExpression}
+  $quota=Get-WidgetQuotaExpression $Status $Now
+  if($quota-ne 'neutral'){return $quota}
   if($State.pressed -and $Now-$State.pressedAt-ge 450){return 'surprised'}
   if($State.reaction -and $Now-lt $State.reactionUntil){return $State.reaction}
   if($State.refreshAt-gt 0){return 'thinking'}
-  $quota=Get-WidgetQuotaExpression $Status $Now
-  if($quota-ne 'neutral'){
-    if([Math]::Max(0,$Now-$State.lastActiveAt)%24000-ge 18000){return 'comfort'}
-    return $quota
-  }
   return Get-WidgetAmbientExpression ($Now-$State.lastActiveAt)
 }
 function Get-WidgetExpressionAsset([string]$Name){
