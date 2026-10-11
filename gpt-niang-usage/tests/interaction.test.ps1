@@ -30,7 +30,7 @@ foreach($legacyPreference in @($false,$true)){
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 $appDir=Split-Path $TestRoot -Parent
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $appDir 'runtime\expressions.ps1'),[Text.Encoding]::UTF8)))
-foreach($name in @('Switch-Scene','Apply-Scene','Show-Quota','Hide-Quota')){
+foreach($name in @('Switch-Scene','Apply-Scene','Show-Quota','Show-WidgetScene','Hide-Quota')){
   $definition=$ast.Find({param($node)$node-is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name-eq $name},$true)
   . ([ScriptBlock]::Create($definition.Extent.Text))
 }

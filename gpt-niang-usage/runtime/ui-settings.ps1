@@ -118,6 +118,7 @@ function Initialize-WidgetSettingsMenu {
   $script:settingsMenuUi.Quote=Add-SettingsAction '换一句台词' {if($script:collapsed){Show-Quota};Switch-Scene 'quote'} -ReturnItem
   Add-SettingsAction '刷新额度' {Request-Refresh}
   Add-SettingsAction '编辑我的语录' {Open-QuoteEditor}
+  $script:settingsMenuUi.AutoDialogue=Add-SettingsAction '定时随机对话' {param($sender,$event)$script:autoDialogueEnabled=$sender.IsChecked;if(!$script:autoDialogueEnabled -and $script:sceneOrigin-eq 'ambient'){Hide-Quota};Reset-AmbientQuoteTimer;Save-Settings} -Description '静置45～90秒说一句；低额度时暂停' -Checkable -ReturnItem
   Add-SettingsDivider
   $script:settingsMenuUi.Expressions=Add-SettingsSubmenu '表情与动作' {
     $script:settingsMenuUi.ExpressionItems=@{}
@@ -214,6 +215,7 @@ function Update-WidgetSettingsMenu{
   $script:settingsMenuSync=$true
   try{
     foreach($mode in $script:settingsMenuUi.ExpressionItems.Keys){$script:settingsMenuUi.ExpressionItems[$mode].IsChecked=$mode-eq $script:expressionMode}
+    $script:settingsMenuUi.AutoDialogue.IsChecked=$script:autoDialogueEnabled
     $script:settingsMenuUi.Bubble.Header=if(!$script:collapsed -and $script:bubbleMode-eq 'quota'){'收起额度气泡'}else{'查看额度'}
     $script:settingsMenuUi.Sound.IsChecked=$script:soundOn;$script:settingsMenuUi.Hide.IsChecked=$script:hideMenu
     $script:settingsMenuUi.ColorLinked.IsChecked=$script:colorMode-eq 'linked';$script:settingsMenuUi.ColorRainbow.IsChecked=$script:colorMode-eq 'rainbow';$script:settingsMenuUi.ColorOriginal.IsChecked=$script:colorMode-eq 'original'

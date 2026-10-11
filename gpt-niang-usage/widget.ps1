@@ -100,6 +100,7 @@ $script:statusStamp=0
 $script:offsetRight=0.0;$script:offsetBottom=0.0;$script:offsetLeft=$null;$script:anchor='right';$script:side='right';$script:scale=1.0;$script:collapsed=$true
 $script:soundOn=$true;$script:soundVolume=0.9;$script:hideMenu=$false
 $script:bubbleMode='quota';$script:sceneStartedAt=0;$script:sceneDeadline=0;$script:sceneTimer=$null;$script:sceneRevision=0
+$script:sceneOrigin='manual';$script:autoDialogueEnabled=$true;$script:ambientQuoteState=$null
 $script:resetTimeMode='countdown';$script:resetPhaseTimer=$null
 $script:displayRequestToken=$null
 $settingsFile=Join-Path $script:dataDir 'settings.json'
@@ -115,6 +116,7 @@ try{$settings=Get-Content -LiteralPath $settingsFile -Raw -Encoding UTF8 | Conve
   if($null-ne $settings.soundOn){$script:soundOn=[bool]$settings.soundOn}
   if($null-ne $settings.soundVolume){$script:soundVolume=[Math]::Min(1,[Math]::Max(0,[double]$settings.soundVolume))}
   if($null-ne $settings.hideMenu){$script:hideMenu=[bool]$settings.hideMenu}
+  if($settings.autoDialogue-is [bool]){$script:autoDialogueEnabled=$settings.autoDialogue}
   Set-WidgetExpressionMode (Resolve-WidgetExpressionMode $settings.expressionMode)
   if(@('original','linked','rainbow','surprise','rare','special','mixed')-contains $settings.colorMode){$script:colorMode=$settings.colorMode}
   if($null-ne $settings.colorChance){try{$chance=[double]$settings.colorChance;if(![double]::IsNaN($chance) -and $chance-ge 0 -and $chance-le 30){$script:colorChance=$chance}}catch{}}
@@ -125,7 +127,7 @@ function Write-WidgetJson($file,$value){
   $temp=$file+'.tmp';[IO.File]::WriteAllText($temp,($value|ConvertTo-Json -Depth 6),[Text.UTF8Encoding]::new($false))
   if([IO.File]::Exists($file)){[IO.File]::Replace($temp,$file,($file+'.bak'),$true)}else{[IO.File]::Move($temp,$file)}
 }
-function Save-Settings {Write-WidgetJson $settingsFile @{layoutVersion=2;right=$script:offsetRight;left=$script:offsetLeft;bottom=$script:offsetBottom;anchor=$script:anchor;side=$script:side;scale=$script:scale;collapsed=$script:collapsed;soundOn=$script:soundOn;soundVolume=$script:soundVolume;hideMenu=$script:hideMenu;expressionMode=$script:expressionMode;colorMode=$script:colorMode;colorChance=$script:colorChance;colorTextChance=$script:colorTextChance;colorPaused=$script:colorPaused}}
+function Save-Settings {Write-WidgetJson $settingsFile @{layoutVersion=2;right=$script:offsetRight;left=$script:offsetLeft;bottom=$script:offsetBottom;anchor=$script:anchor;side=$script:side;scale=$script:scale;collapsed=$script:collapsed;soundOn=$script:soundOn;soundVolume=$script:soundVolume;hideMenu=$script:hideMenu;expressionMode=$script:expressionMode;autoDialogue=$script:autoDialogueEnabled;colorMode=$script:colorMode;colorChance=$script:colorChance;colorTextChance=$script:colorTextChance;colorPaused=$script:colorPaused}}
 function Set-Facing {
   $factor=if($script:side-eq 'left'){-1.0}else{1.0}
   $script:ui.FacingScale.ScaleX=$factor;$script:ui.TextFacingScale.ScaleX=$factor
@@ -217,6 +219,28 @@ function Tick-Scene([long]$now){
   if($now-ge $script:sceneDeadline){Hide-Quota;return}
   if($script:bubbleMode-eq 'quota' -and $script:resetTimeMode-ne 'fixed' -and $now-ge $script:sceneStartedAt+2000){Set-ResetTimeMode 'fixed' $now}
 }
+function Get-AmbientQuoteDelay {
+  if(!$script:ambientQuoteRandom){$script:ambientQuoteRandom=[Random]::new()}
+  return [long]$script:ambientQuoteRandom.Next(45000,90001)
+}
+function Reset-AmbientQuoteTimer([long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()){
+  if(!$script:ambientQuoteState){$script:ambientQuoteState=@{nextAt=0L;activityAt=0L;blocked=$false;count=0;lastShownAt=0L}}
+  $script:ambientQuoteState.nextAt=$Now+(Get-AmbientQuoteDelay)
+  $script:ambientQuoteState.activityAt=[long]$script:expressionState.lastActiveAt
+  $script:ambientQuoteState.blocked=$false
+}
+function Tick-AmbientQuote([long]$Now,[bool]$HostVisible,[bool]$HostActive){
+  if(!$script:ambientQuoteState){Reset-AmbientQuoteTimer $Now}
+  $quotaMood=Get-WidgetQuotaExpression $script:status $Now
+  if(!$script:collapsed -and $script:sceneOrigin-eq 'ambient' -and (!$script:autoDialogueEnabled -or $quotaMood-ne 'neutral')){Hide-Quota}
+  $ready=$script:autoDialogueEnabled -and $HostVisible -and $HostActive -and $script:window.IsVisible -and $script:collapsed -and !$script:drag -and !$script:expressionState.pressed -and !$script:context.IsOpen -and !($script:quoteEditor -and $script:quoteEditor.IsVisible) -and !($script:colorTriggerEditor -and $script:colorTriggerEditor.IsVisible) -and $script:expressionState.refreshAt-le 0 -and $quotaMood-eq 'neutral'
+  if(!$ready){$script:ambientQuoteState.blocked=$true;$script:ambientQuoteState.nextAt=0L;return}
+  if($script:ambientQuoteState.blocked -or $script:ambientQuoteState.activityAt-ne [long]$script:expressionState.lastActiveAt){Reset-AmbientQuoteTimer $Now;return}
+  if($Now-lt $script:ambientQuoteState.nextAt){return}
+  Show-AmbientQuote
+  $script:ambientQuoteState.count++;$script:ambientQuoteState.lastShownAt=$Now
+  Reset-AmbientQuoteTimer $Now
+}
 function Read-DisplayRequest {
   try{
     $request=Get-Content -LiteralPath (Join-Path $script:dataDir 'display-request.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -267,6 +291,7 @@ function Update-BubbleTooltip {
 
 function Switch-Scene([string]$mode){
   if($script:collapsed){return}
+  $script:sceneOrigin='manual'
   $script:sceneRevision++;$script:bubbleMode=$mode
   if($mode-eq 'quote'){$script:ui.QuoteText.Text=Get-WidgetBubbleQuote $script:dataDir;Fit-QuoteText}
   if($script:sceneTimer){$script:sceneTimer.Stop()}
@@ -284,21 +309,28 @@ function Switch-Scene([string]$mode){
   $script:sceneTimer.Start();Restart-SceneTtl 280
 }
 function Next-Bubble {
+  $script:sceneOrigin='manual'
   Invoke-WidgetExpressionEvent 'interact'
   if($script:collapsed){return}
   if($script:bubbleMode-eq 'quota'){Switch-Scene 'quote'}else{Hide-Quota}
 }
 function Click-Character {
+  $script:sceneOrigin='manual'
   Invoke-WidgetExpressionEvent 'click'
   if($script:collapsed){Show-Quota}
   elseif($script:bubbleMode-eq 'quota'){Switch-Scene 'quote'}
   else{Switch-Scene 'quota'}
 }
-function Show-Quota {
-  Invoke-WidgetExpressionEvent 'interact'
-  if(!$script:collapsed){if($script:bubbleMode-ne 'quota'){Switch-Scene 'quota'}else{Restart-SceneTtl};return}
+function Show-Quota {Show-WidgetScene 'quota'}
+function Show-AmbientQuote {Show-WidgetScene 'quote' 'ambient'}
+function Show-WidgetScene([ValidateSet('quota','quote')][string]$Mode='quota',[ValidateSet('manual','ambient')][string]$Origin='manual'){
+  if($Origin-eq 'manual'){Invoke-WidgetExpressionEvent 'interact'}
+  $script:sceneOrigin=$Origin
+  if(!$script:collapsed){if($script:bubbleMode-ne $Mode){Switch-Scene $Mode}else{Restart-SceneTtl};return}
   $script:bubbleEpoch++;$script:collapsed=$false
-  $script:bubbleMode='quota';Apply-Scene
+  $script:bubbleMode=$Mode
+  if($Mode-eq 'quote'){$script:sceneRevision++;$script:ui.QuoteText.Text=Get-WidgetBubbleQuote $script:dataDir;Fit-QuoteText}
+  Apply-Scene
   if($script:sceneTimer){$script:sceneTimer.Stop()}
   if($script:closeTimer){$script:closeTimer.Stop();$script:closeTimer=$null}
   foreach($stage in @(@{name='TailNear';delay=0},@{name='Tail';delay=130},@{name='Bubble';delay=260})){
@@ -313,11 +345,13 @@ function Show-Quota {
   Set-AnimatedValue $script:ui.SceneText ([Windows.UIElement]::OpacityProperty) 0
   Animate-Value $script:ui.SceneText ([Windows.UIElement]::OpacityProperty) 1 160 360
   $script:ui.Bubble.IsHitTestVisible=$true
-  Restart-SceneTtl 520;Request-Refresh;Save-Settings
+  Restart-SceneTtl 520
+  if($Origin-eq 'manual'){if($Mode-eq 'quota'){Request-Refresh};Save-Settings}
 }
 function Hide-Quota {
   if($script:collapsed){return}
   $script:collapsed=$true;$script:bubbleEpoch++
+  $script:sceneOrigin='manual'
   Invoke-WidgetExpressionEvent 'close'
   if($script:widgetColors){Update-WidgetColorScene}
   $script:sceneDeadline=0
@@ -470,7 +504,7 @@ function Update-Quota {
   Update-WidgetExpression
 }
 Set-Appearance;Set-BubbleState;Initialize-WidgetColors;Update-Quota
-if($CheckOnly){$hostWindow=[GptWidgetNative]::FindCodex();$foregroundWindow=[GptWidgetNative]::GetAncestor([GptWidgetNative]::GetForegroundWindow(),2);@{ok=$true;imageLoaded=$bitmap.PixelWidth-gt 0;host=$hostWindow.ToInt64();hostTitle=[GptWidgetNative]::Title($hostWindow);foreground=$foregroundWindow.ToInt64();foregroundTitle=[GptWidgetNative]::Title($foregroundWindow);dataDir=$script:dataDir;scale=$script:scale;expressionMode=$script:expressionMode}|ConvertTo-Json;return}
+if($CheckOnly){$hostWindow=[GptWidgetNative]::FindCodex();$foregroundWindow=[GptWidgetNative]::GetAncestor([GptWidgetNative]::GetForegroundWindow(),2);@{ok=$true;imageLoaded=$bitmap.PixelWidth-gt 0;host=$hostWindow.ToInt64();hostTitle=[GptWidgetNative]::Title($hostWindow);foreground=$foregroundWindow.ToInt64();foregroundTitle=[GptWidgetNative]::Title($foregroundWindow);dataDir=$script:dataDir;scale=$script:scale;expressionMode=$script:expressionMode;autoDialogue=$script:autoDialogueEnabled}|ConvertTo-Json;return}
 if($Preview){
   $script:collapsed=$false;Set-Appearance;Set-BubbleState;Apply-Scene
   $script:ui.Root.LayoutTransform=[Windows.Media.Transform]::Identity
@@ -670,9 +704,11 @@ function Tick-Widget {
   }
   if($now-$script:lastPresence-ge 1000){
     Update-Quota
-    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
-    $script:lastPresence=$now
     Read-DisplayRequest
+    Tick-AmbientQuote $now ([bool]$visible) ($script:foregroundHost-eq $script:hostHandle -or $script:foregroundOwn)
+    Update-WidgetExpression $now
+    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};ambientDialogue=@{enabled=$script:autoDialogueEnabled;paused=$script:ambientQuoteState.blocked;nextAt=$script:ambientQuoteState.nextAt;count=$script:ambientQuoteState.count;lastShownAt=$script:ambientQuoteState.lastShownAt};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;origin=$script:sceneOrigin;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
+    $script:lastPresence=$now
   }
   }finally{$script:updating=$false}
 }

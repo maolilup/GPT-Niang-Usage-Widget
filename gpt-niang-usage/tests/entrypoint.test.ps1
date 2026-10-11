@@ -19,6 +19,11 @@ try{
   if($LASTEXITCODE-ne 0){throw 'The startup preference check failed.'}
   $restored=($checked -join "`n")|ConvertFrom-Json
   if(!$restored.ok -or [Math]::Abs([double]$restored.scale-0.8)-gt 0.001 -or $restored.expressionMode-ne 'neutral'){throw 'The entry point did not restore saved size and manual expression preferences.'}
+  if($restored.autoDialogue-ne $true){throw 'Automatic dialogue should default to enabled when no preference exists.'}
+  $settings=@{scale=0.8;expressionMode='neutral';hideMenu=$true;autoDialogue=$false}
+  [IO.File]::WriteAllText((Join-Path $testData 'settings.json'),($settings|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+  $checked=& $powerShell -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $testApp 'runtime\start-widget.ps1') -WidgetPath (Join-Path $testApp 'widget.ps1') -CheckOnly
+  if($LASTEXITCODE-ne 0 -or (($checked-join "`n")|ConvertFrom-Json).autoDialogue-ne $false){throw 'The startup entry point must preserve disabled automatic dialogue.'}
   & $powerShell -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $testApp 'runtime\start-widget.ps1') -WidgetPath (Join-Path $testApp 'widget.ps1') -Preview
   if($LASTEXITCODE-ne 0){throw 'The full WPF entry point failed.'}
   $preview=Join-Path $testApp 'preview.png'

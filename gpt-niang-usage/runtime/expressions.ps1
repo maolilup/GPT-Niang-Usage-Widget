@@ -110,12 +110,12 @@ function Get-WidgetQuotaExpression($Status,[long]$Now){
   return 'neutral'
 }
 function Get-WidgetExpressionName($State,$Status,[long]$Now){
-  if($State.mode-ne 'auto'){return Resolve-WidgetExpressionMode $State.mode}
   # A cached observation predating this request must never finish its thinking pose.
   if($State.refreshAt-gt 0){
     $observed=ConvertTo-WidgetExpressionNumber $Status.observedAt
     if(($null-ne $observed -and $observed-ge $State.refreshAt) -or $Now-ge $State.refreshAt+8000){$State.refreshAt=0L}
   }
+  if($State.mode-ne 'auto'){return Resolve-WidgetExpressionMode $State.mode}
   if($State.quoteExpression){return $State.quoteExpression}
   $quota=Get-WidgetQuotaExpression $Status $Now
   if($quota-ne 'neutral'){return $quota}

@@ -119,6 +119,14 @@ Assert-Equal (Get-WidgetExpressionName $state $null ($now+300000)) shy 'Manual m
 $state.mode='auto'
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+300000)) sleepy 'Returning to automatic resumes state deadlines'
 
+$manual=New-WidgetExpressionState $now;$manual.mode='shy'
+Register-WidgetExpressionEvent $manual 'refresh' $now
+Assert-Equal (Get-WidgetExpressionName $manual (New-Snapshot 50 ($now+1)) ($now+1)) shy 'Fresh quota does not replace a manually selected pose'
+Assert-Equal $manual.refreshAt 0 'Manual expression mode still completes refresh bookkeeping for the dialogue timer'
+Register-WidgetExpressionEvent $manual 'refresh' ($now+2)
+Assert-Equal (Get-WidgetExpressionName $manual $null ($now+8002)) shy 'Manual pose also survives refresh timeout'
+Assert-Equal $manual.refreshAt 0 'Manual expression mode cannot leave the dialogue timer blocked indefinitely'
+
 $state=New-WidgetExpressionState $now
 Register-WidgetExpressionEvent $state 'refresh' $now
 Assert-Equal (Get-WidgetExpressionName $state $old ($now+7999)) thinking 'Refresh survives just before eight-second deadline'
@@ -206,7 +214,7 @@ try{
   $widget=[IO.File]::ReadAllText((Join-Path $appDir 'widget.ps1'),[Text.Encoding]::UTF8)
   $ast=[Management.Automation.Language.Parser]::ParseInput($widget,[ref]$tokens,[ref]$errors)
   if($errors.Count){throw ($errors|Out-String)}
-  foreach($name in @('Test-GirlAlpha','Write-WidgetJson','Save-Settings')){
+  foreach($name in @('Test-GirlAlpha','Write-WidgetJson','Save-Settings','Get-AmbientQuoteDelay','Reset-AmbientQuoteTimer')){
     $function=$ast.Find({param($node)$node-is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name-eq $name},$true)
     . ([ScriptBlock]::Create($function.Extent.Text))
   }
@@ -233,7 +241,17 @@ try{
   $script:window=[Windows.Markup.XamlReader]::Parse([IO.File]::ReadAllText((Join-Path $appDir 'widget.xaml'),[Text.Encoding]::UTF8))
   $script:scale=1.0;$script:soundOn=$true;$script:soundVolume=0.9;$script:hideMenu=$false;$script:bubbleTapAdvance=$false
   $script:collapsed=$true;$script:bubbleMode='quota'
+  $script:autoDialogueEnabled=$true;$script:sceneOrigin='manual'
   Initialize-WidgetSettingsMenu
+  $autoDialogue=$script:settingsMenuUi.AutoDialogue
+  Assert-Equal $autoDialogue.IsChecked $true 'Automatic dialogue starts enabled in the real menu'
+  $autoDialogue.IsChecked=$false
+  $autoDialogue.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.MenuItem]::ClickEvent,$autoDialogue))
+  Assert-Equal $script:autoDialogueEnabled $false 'Automatic dialogue can be disabled through its real menu handler'
+  Assert-Equal (Get-Content -LiteralPath $settingsFile -Raw -Encoding UTF8|ConvertFrom-Json).autoDialogue $false 'Automatic dialogue preference is persisted'
+  $autoDialogue.IsChecked=$true
+  $autoDialogue.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.MenuItem]::ClickEvent,$autoDialogue))
+  Assert-Equal $script:autoDialogueEnabled $true 'Automatic dialogue can be resumed from the menu'
   Assert-Equal $script:settingsMenuUi.ExpressionItems.Count 12 'Submenu offers auto, original, all expressions and gestures'
   Assert-Equal $script:settingsMenuUi.ExpressionItems.shy.IsChecked $true 'Restored manual preference has a checkmark'
   $item=$script:settingsMenuUi.ExpressionItems.happy
