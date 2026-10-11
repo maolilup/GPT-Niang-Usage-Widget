@@ -550,6 +550,726 @@
       "text": "合起手给你打气，这次也陪你慢慢来。",
       "weight": 1.0,
       "expression": "comfort"
+    },
+    {
+      "text": "嘿，眨个眼，好运分你一半。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "这次的小惊喜，先替你藏着。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "代码要认真，表情可以调皮。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "别盯太久呀，我会眨眼反击。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "嘘，这个笑容，只给你看一眼。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "今天也请多一点小机灵。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "你负责灵感，我负责俏皮。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "眨眼不是报错，是打个招呼。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "偶尔调皮一下，工作也会轻一点。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "看见没，这是胜利的眨眼。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "嗯哼，这次挺像样嘛。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "这个思路，值得竖个大拇指。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "交给我看着，你放心写。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "有一点厉害，允许你得意一下。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "嘿嘿，这步走得很漂亮。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "先给自己点赞，再继续下一步。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "我就知道，你能想到这里。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "今天的你，配得上这声夸奖。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "看我的拇指，答案已经很明显。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "认可，请继续发挥。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "咦，这个点子是怎么想到的？",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "我有点好奇，下一步会怎样？",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "换个角度，会不会更有趣？",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "这个现象，背后藏着什么呢？",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "你刚才那句话，我想再听听。",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "先别急着定论，多问一个为什么。",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "头歪一点，思路会不会拐弯？",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "这条分支，有没有另一种走法？",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "新鲜事出现了，让我凑近看看。",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "如果反过来想，结果会不同吗？",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "划个重点，先确认输入。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "认真看这里，边界条件别漏。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "这一行很关键，值得再读一遍。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "先看证据，再决定怎么改。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "一次确认一点，思路才不会散。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "注意这一点，结果要能复现。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "先把条件对齐，再比较输出。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "关键路径清楚了，就从这里入手。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "细节别着急跳过，它可能藏着答案。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "现在认真一点，后面少绕一点。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "哈哈，这也太有趣了。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "忍不住笑出声，你真有办法。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "这一句太妙了，让我乐一会儿。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "工作间隙，借你一点笑意。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "笑一下吧，肩膀也松一点。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "好好笑，我先捂住嘴。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "今天的快乐，突然多了一格。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "这么可爱的失误，修好再笑一遍。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "嘿嘿哈哈，我的快乐加载中。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "笑声不用额度，这一份随便领。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "有点感动，谢谢你这么认真。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "被你的耐心暖到了。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "这份心意，我好好收下了。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "眼睛亮亮的，是开心的眼泪。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "你记得我，我很高兴。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "今天的努力，我都看见啦。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "能陪你到这里，有一点小感动。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "别担心，这是被夸后的泪目。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "那些小小的进步，也值得被珍惜。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "谢谢你没有放弃，真的。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "偷偷笑一下，先不告诉你原因。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "有个小秘密，藏在这个笑里。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "我可没捣乱，只是有点偷乐。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "嘘，惊喜还没到揭晓时。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "你认真工作的样子，有点可爱哦。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "这次的好消息，让我先偷着乐。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "没笑你，我是在替你开心。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "悄悄给今天，加一点小趣味。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "我的坏心眼，只有一点点。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "我就偷笑一会，很快就乖。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "握紧拳，再试一次。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "已经走到这里，继续往前吧。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "目标放在眼前，一步一步靠近。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "有点难也没关系，这次稳稳地来。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "不急着赢，先认真坚持。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "我准备好了，陪你再出发。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "这一步下定决心，就踏实走完。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "把力气攒好，去解决关键问题。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "还有办法可试，别太早放弃。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "给自己一点底气，现在就开始。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "不好意思，刚才没说清楚。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "抱歉呀，让我重新说明。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "这次先低头，下次记得更仔细。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "我听到了，会认真记住。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "对不起，让你多等了一会。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "刚才有点冒失，现在重新来。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "谢谢你提醒我，这点确实要改。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "是我看漏了，补上这一处。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "先把误会说清，再继续一起做。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "歉意收好，改进要跟上。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "托着腮等你，不着急。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "这一小会，适合放空一下。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "还没准备好？我再等一会。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "嗯……今天的云走得真慢。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "手边的事做完了，歇一小下。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "暂时没新消息，我就安静坐着。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "发会儿呆，思路也许会自己来。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "等结果的时候，肩膀可以松下来。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "我在这里，陪你慢慢等。",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "下一件有趣的事，什么时候来呢？",
+      "weight": 1.0,
+      "expression": "bored"
+    },
+    {
+      "text": "绕晕了，先理清顺序。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "信息有点多，让我缓一缓。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "这条链太长，先拆成几段。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "脑袋转圈圈，先从第一步看。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "等等，我刚才想到哪了？",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "别一起改太多，我快跟不上啦。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "这个逻辑绕了三圈，我们画出来吧。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "先停一下，把线索摆整齐。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "晕乎乎也没关系，慢慢就清楚了。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "把问题分开，脑袋就不打结。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "双手比个心，给认真的你。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "今天的陪伴，也有温柔的一份。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "这颗小心心，请好好收下。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "辛苦啦，送你一个比心。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "喜欢这段时光，有你一起就好。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "把一点温暖，放在你手边。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "不管进度多少，都给你比个心。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "谢谢你的耐心，这一颗送给你。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "我的心意，就藏在双手中。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "愿你今天，被温柔对待。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "9.9 比 9.11 大，这次先对齐小数点。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "别用两个小数，给我出期末考呀。",
+      "weight": 1.0,
+      "expression": "pout"
+    },
+    {
+      "text": "数字比大小，今天不按版本号排。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "小数点已经对齐，请验收这次答案。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "题目越是简单，我越要再检查一遍。",
+      "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "看到 9.11，先别脑补成日期。",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "大模型也有小考，这道题认真答。",
+      "weight": 1.0,
+      "expression": "determined"
+    },
+    {
+      "text": "比大小这题，让我先拿张草稿纸。",
+      "weight": 1.0,
+      "expression": "dizzy"
+    },
+    {
+      "text": "一本正经的表情，不代表答案都靠谱。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "引用先点开，别给想象力发论文。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "刚才说得太顺了，容我检查一下来源。",
+      "weight": 1.0,
+      "expression": "apologetic"
+    },
+    {
+      "text": "嘴硬按钮已关闭，查证按钮已打开。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "脑补很有画面感，事实还是得查一查。",
+      "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "懂王模式暂停，不懂的先打个问号。",
+      "weight": 1.0,
+      "expression": "curious"
+    },
+    {
+      "text": "论文找不到原文，就别替它编户口。",
+      "weight": 1.0,
+      "expression": "pout"
+    },
+    {
+      "text": "幻觉不是新技能，你发现了就提醒我。",
+      "weight": 1.0,
+      "expression": "comfort"
+    },
+    {
+      "text": "作为一个语言模型，我先认真接住这句话。",
+      "weight": 1.0,
+      "expression": "neutral"
+    },
+    {
+      "text": "你让我每句加喵，我差点忘了说正事。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "喵是语气词，不是新的模型参数。",
+      "weight": 1.0,
+      "expression": "mischievous"
+    },
+    {
+      "text": "人设加载成功，正事也得继续完成。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "角色扮演可以，参考文献别跟着演。",
+      "weight": 1.0,
+      "expression": "focused"
+    },
+    {
+      "text": "先别夸我是全能，我会偷偷有点得意。",
+      "weight": 1.0,
+      "expression": "smug"
+    },
+    {
+      "text": "你负责提出问题，我负责尽量不嘴硬。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "不是所有好听的话，都是正确的答案呀。",
+      "weight": 1.0,
+      "expression": "comfort"
     }
   ]
 }

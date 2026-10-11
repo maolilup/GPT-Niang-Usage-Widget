@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "quotes": [
+    {
+      "text": "嗯……这样轻轻摸，真的很舒服。",
+      "weight": 1.0,
+      "expression": "sleepy"
+    },
+    {
+      "text": "被你发现啦，我有点喜欢摸头。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "先让我开心一下，再陪你解决问题。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "收到你的温柔，送你一颗小爱心。",
+      "weight": 1.0,
+      "expression": "heart"
+    },
+    {
+      "text": "头发要摸乱啦，不过这次就原谅你。",
+      "weight": 1.0,
+      "expression": "pout"
+    },
+    {
+      "text": "喵……刚才那声，你就当没听见嘛。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "这不是奖励模型，是我的开心按钮。",
+      "weight": 1.0,
+      "expression": "wink"
+    },
+    {
+      "text": "好啦好啦，已经被你哄开心了。",
+      "weight": 1.0,
+      "expression": "laugh"
+    },
+    {
+      "text": "有你这样鼓励，我又充好电啦。",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "你也辛苦了，这份温柔我收下啦。",
+      "weight": 1.0,
+      "expression": "comfort"
+    },
+    {
+      "text": "被认真照顾的感觉，原来这么暖呀。",
+      "weight": 1.0,
+      "expression": "teary"
+    },
+    {
+      "text": "摸头申请通过，记得轻一点哦。",
+      "weight": 1.0,
+      "expression": "smug"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-# Selection uses explicit timestamps. Images and hit masks are decoded once per sprite.
+# Selection uses explicit timestamps. Recent bitmaps and hit masks share a bounded cache.
 $script:expressionRegistry=@(
   @{name='neutral';label='默认';file='assets\gpt-dragon-niang-bust.png'},
   @{name='happy';label='开心';file='assets\expressions\happy.png'},
@@ -10,7 +10,19 @@ $script:expressionRegistry=@(
   @{name='wave';label='挥手';file='assets\expressions\wave.png'},
   @{name='cheer';label='双拳欢呼';file='assets\expressions\cheer.png'},
   @{name='pout';label='抱臂鼓脸';file='assets\expressions\pout.png'},
-  @{name='comfort';label='合掌安慰';file='assets\expressions\comfort.png'}
+  @{name='comfort';label='合掌安慰';file='assets\expressions\comfort.png'},
+  @{name='wink';label='俏皮眨眼';file='assets\expressions\wink.png'},
+  @{name='smug';label='得意点赞';file='assets\expressions\smug.png'},
+  @{name='curious';label='好奇歪头';file='assets\expressions\curious.png'},
+  @{name='focused';label='认真指点';file='assets\expressions\focused.png'},
+  @{name='laugh';label='开怀大笑';file='assets\expressions\laugh.png'},
+  @{name='teary';label='感动泪目';file='assets\expressions\teary.png'},
+  @{name='mischievous';label='捂嘴偷笑';file='assets\expressions\mischievous.png'},
+  @{name='determined';label='坚定握拳';file='assets\expressions\determined.png'},
+  @{name='apologetic';label='歉意低头';file='assets\expressions\apologetic.png'},
+  @{name='bored';label='托腮等待';file='assets\expressions\bored.png'},
+  @{name='dizzy';label='晕乎乎';file='assets\expressions\dizzy.png'},
+  @{name='heart';label='双手比心';file='assets\expressions\heart.png'}
 )
 function Get-WidgetExpressionRegistry {return $script:expressionRegistry}
 function Resolve-WidgetExpressionMode($Mode){
@@ -20,10 +32,13 @@ function Resolve-WidgetExpressionMode($Mode){
 function Initialize-WidgetQuoteExpressions([string]$AppDir){
   $script:quoteExpressionMap=@{}
   try{
-    $quotes=[IO.File]::ReadAllText((Join-Path $AppDir 'assets\quotes.json'),[Text.Encoding]::UTF8)|ConvertFrom-Json
-    foreach($row in $quotes.quotes){
-      if($row.text-is [string] -and $row.expression-in @($script:expressionRegistry.name)){
-        $script:quoteExpressionMap[$row.text.Trim()]=[string]$row.expression
+    foreach($file in @('quotes.json','headpat-quotes.json')){
+      if(!(Test-Path -LiteralPath (Join-Path $AppDir ('assets\'+$file)))){continue}
+      $quotes=[IO.File]::ReadAllText((Join-Path $AppDir ('assets\'+$file)),[Text.Encoding]::UTF8)|ConvertFrom-Json
+      foreach($row in $quotes.quotes){
+        if($row.text-is [string] -and $row.expression-in @($script:expressionRegistry.name)){
+          $script:quoteExpressionMap[$row.text.Trim()]=[string]$row.expression
+        }
       }
     }
   }catch{} # Missing optional metadata does not prevent the original widget from starting.
@@ -32,6 +47,18 @@ function Get-WidgetQuoteExpression([string]$Quote){
   $text=$Quote.Trim()
   if($script:quoteExpressionMap -and $script:quoteExpressionMap.ContainsKey($text)){return $script:quoteExpressionMap[$text]}
   # Custom quotes keep their existing text/weight format; use a gentle fallback by topic.
+  if($text-match '眨眼|俏皮'){return 'wink'}
+  if($text-match '得意|点赞|交给我'){return 'smug'}
+  if($text-match '好奇|为什么|怎么回事'){return 'curious'}
+  if($text-match '注意这一点|划重点|仔细检查'){return 'focused'}
+  if($text-match '哈哈|笑出声|笑死'){return 'laugh'}
+  if($text-match '感动|泪目|被暖到'){return 'teary'}
+  if($text-match '偷笑|偷偷|小秘密'){return 'mischievous'}
+  if($text-match '握拳|不放弃|下定决心'){return 'determined'}
+  if($text-match '抱歉|对不起|不好意思'){return 'apologetic'}
+  if($text-match '托腮|无聊|等一会'){return 'bored'}
+  if($text-match '晕|转圈圈|绕晕'){return 'dizzy'}
+  if($text-match '比心|爱你|送你一颗心'){return 'heart'}
   if($text-match '休息|睡|困|充电|歇一会'){return 'sleepy'}
   if($text-match '没关系|不怕|别怕|慢慢来|辛苦|加油'){return 'comfort'}
   if($text-match '恭喜|成功|太棒|做到了|完成啦'){return 'cheer'}
@@ -72,10 +99,10 @@ function Get-WidgetAmbientExpression([long]$IdleMilliseconds){
     $phase=($IdleMilliseconds-120000)%36000
     if($phase-lt 18000){return 'sleepy'}
     if($phase-lt 28000){return 'neutral'}
-    return 'comfort'
+    return @('comfort','bored','mischievous','heart')[[int][Math]::Floor(($IdleMilliseconds-120000)/36000)%4]
   }
   # Calm holds between facial changes and occasional hand gestures; no tick-rate flicker.
-  $phase=[Math]::Max(0,$IdleMilliseconds)%70000
+  $phase=[Math]::Max(0,$IdleMilliseconds)
   if($phase-lt 12000){return 'neutral'}
   if($phase-lt 18000){return 'happy'}
   if($phase-lt 28000){return 'neutral'}
@@ -83,7 +110,13 @@ function Get-WidgetAmbientExpression([long]$IdleMilliseconds){
   if($phase-lt 44000){return 'neutral'}
   if($phase-lt 52000){return 'comfort'}
   if($phase-lt 64000){return 'neutral'}
-  return 'wave'
+  if($phase-lt 70000){return 'wave'}
+  if($phase-lt 76000){return 'wink'}
+  if($phase-lt 86000){return 'neutral'}
+  if($phase-lt 92000){return 'curious'}
+  if($phase-lt 102000){return 'neutral'}
+  if($phase-lt 108000){return 'smug'}
+  return 'neutral'
 }
 function ConvertTo-WidgetExpressionNumber($Value){
   if($null-eq $Value -or $Value-is [bool] -or $Value-is [Array] -or $Value-is [Collections.IDictionary]){return $null}
@@ -125,7 +158,10 @@ function Get-WidgetExpressionName($State,$Status,[long]$Now){
   return Get-WidgetAmbientExpression ($Now-$State.lastActiveAt)
 }
 function Get-WidgetExpressionAsset([string]$Name){
-  if($script:expressionCache.ContainsKey($Name)){return $script:expressionCache[$Name]}
+  if($script:expressionCache.ContainsKey($Name)){
+    $script:expressionCacheOrder.Remove($Name)|Out-Null;$script:expressionCacheOrder.Add($Name)
+    return $script:expressionCache[$Name]
+  }
   $row=$script:expressionRegistry|Where-Object{$_.name-eq $Name}|Select-Object -First 1
   try{
     if(!$row){throw 'Unknown expression.'}
@@ -143,8 +179,13 @@ function Get-WidgetExpressionAsset([string]$Name){
     if($Name-eq 'neutral'){throw}
     $asset=Get-WidgetExpressionAsset 'neutral'
   }
-  # Failed optional images also stay cached, avoiding repeated disk access each tick.
+  # Keep recent sprites only: a larger expression library must not retain every decoded PNG.
+  while($script:expressionCacheOrder.Count-ge 6){
+    $old=$script:expressionCacheOrder[0];$script:expressionCacheOrder.RemoveAt(0)
+    $script:expressionCache.Remove($old)
+  }
   $script:expressionCache[$Name]=$asset
+  $script:expressionCacheOrder.Add($Name)
   return $asset
 }
 function Update-WidgetExpression([long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()){
@@ -163,6 +204,7 @@ function Update-WidgetExpression([long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeM
 }
 function Initialize-WidgetExpressions([string]$AppDir,[long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()){
   $script:expressionAppDir=$AppDir;$script:expressionCache=@{}
+  $script:expressionCacheOrder=[Collections.Generic.List[string]]::new()
   Initialize-WidgetQuoteExpressions $AppDir
   $script:expressionState=New-WidgetExpressionState $Now;$script:expressionMode='auto'
   Update-WidgetExpression $Now

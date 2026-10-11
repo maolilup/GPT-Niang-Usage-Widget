@@ -13,7 +13,7 @@ $script:ui=@{Girl=[Windows.Controls.Image]::new()}
 Initialize-WidgetExpressions $appDir $now
 Assert-Equal $script:expressionMode auto 'Default selection is automatic'
 Assert-Equal $script:expressionCurrent neutral 'Default sprite is original'
-Assert-Equal @(Get-WidgetExpressionRegistry).Count 11 'Registry includes neutral and ten expressions'
+Assert-Equal @(Get-WidgetExpressionRegistry).Count 23 'Registry includes neutral and twenty-two expressions'
 Assert-Equal (Resolve-WidgetExpressionMode 'bad') auto 'Unknown persisted modes recover to automatic'
 Assert-Equal (Resolve-WidgetExpressionMode 'cheer') cheer 'Gesture modes are registered even if optional art is absent'
 $state=New-WidgetExpressionState $now
@@ -66,6 +66,20 @@ Assert-Equal (Get-WidgetExpressionName $state $null ($now+126599)) cheer 'Dialog
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+126600)) neutral 'After the dialogue hold, daily variation resumes'
 
 # The actual event adapter must capture the displayed sprite before resetting the idle clock.
+foreach($name in @('wink','smug','curious','focused','laugh','teary','mischievous','determined','apologetic','bored','dizzy','heart')){
+  $rows=@($builtIn.quotes|Where-Object{$_.expression-eq $name})
+  if($rows.Count-lt 10){throw ('Expression requires at least ten explicitly paired quotes: '+$name)}
+  foreach($row in $rows){Assert-Equal (Get-WidgetQuoteExpression $row.text) $name ('Exact quote pairing: '+$row.text)}
+}
+foreach($pair in @(@(70000,'wink'),@(86000,'curious'),@(102000,'smug'),@(184000,'bored'),@(220000,'mischievous'),@(256000,'heart'))){
+  Assert-Equal (Get-WidgetAmbientExpression $pair[0]) $pair[1] 'New calm expressions participate in idle holds'
+  Assert-Equal (Get-WidgetAmbientExpression ($pair[0]+1000)) $pair[1] 'Idle holds do not flicker between ticks'
+}
+Assert-Equal (Get-WidgetQuoteExpression '哈哈，真有趣。') laugh 'Custom laughter uses laughing pose'
+Assert-Equal (Get-WidgetQuoteExpression '抱歉，刚才没说清楚。') apologetic 'Custom apology uses apologetic pose'
+Assert-Equal (Get-WidgetQuoteExpression '脑袋被绕晕了。') dizzy 'Custom confusion uses dizzy pose'
+Assert-Equal (Get-WidgetQuoteExpression '双手比心，送给你。') heart 'Custom heart gesture uses its matching pose'
+
 Initialize-WidgetExpressions $appDir $now
 Update-WidgetExpression ($now+12000)
 Assert-Equal $script:expressionCurrent happy 'Fixture is in an ambient smile'
@@ -192,6 +206,19 @@ Assert-Same $script:alphaPixels $happyAlpha 'Alpha buffer is reused'
 Register-WidgetExpressionEvent $script:expressionState 'press' $now
 Update-WidgetExpression ($now+130000)
 Assert-Equal $script:expressionCurrent happy 'Manual visual survives automatic events and idle ticks'
+foreach($row in Get-WidgetExpressionRegistry){
+  Set-WidgetExpressionMode $row.name $now
+  Assert-Equal $script:expressionCurrent $row.name ('Registered art decodes without falling back: '+$row.name)
+  Assert-Same $script:bitmap $script:ui.Girl.Source 'Eviction never separates visible art from the active bitmap'
+  Assert-Equal ($script:expressionCache.Count-le 6) $true 'Decoded sprite cache stays bounded across the complete library'
+}
+$recent=$script:bitmap;$recentAlpha=$script:alphaPixels
+Set-WidgetExpressionMode heart $now
+Assert-Same $script:bitmap $recent 'Most recent sprite is reused after visiting all expressions'
+Assert-Same $script:alphaPixels $recentAlpha 'Most recent hit mask is reused without another decode'
+Set-WidgetExpressionMode neutral $now
+Assert-Equal $script:expressionCurrent neutral 'Evicted original sprite can be decoded again safely'
+Assert-Equal ($script:expressionCache.Count-le 6) $true 'Reloading an evicted sprite does not grow the cache'
 
 # Tiny fixtures verify variant dimensions and transparent click-through, independent of generated art.
 $fixture=Join-Path ([IO.Path]::GetTempPath()) ('gpt-niang-expression-'+[Guid]::NewGuid().ToString('N'))
@@ -252,7 +279,7 @@ try{
   $autoDialogue.IsChecked=$true
   $autoDialogue.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.MenuItem]::ClickEvent,$autoDialogue))
   Assert-Equal $script:autoDialogueEnabled $true 'Automatic dialogue can be resumed from the menu'
-  Assert-Equal $script:settingsMenuUi.ExpressionItems.Count 12 'Submenu offers auto, original, all expressions and gestures'
+  Assert-Equal $script:settingsMenuUi.ExpressionItems.Count 24 'Submenu offers auto, original, all expressions and gestures'
   Assert-Equal $script:settingsMenuUi.ExpressionItems.shy.IsChecked $true 'Restored manual preference has a checkmark'
   $item=$script:settingsMenuUi.ExpressionItems.happy
   $item.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.MenuItem]::ClickEvent,$item))

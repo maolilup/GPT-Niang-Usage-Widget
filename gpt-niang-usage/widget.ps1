@@ -15,6 +15,7 @@ $null=New-Item -ItemType Directory -Path $script:dataDir -Force
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\color-theme.ps1'),[Text.Encoding]::UTF8)))
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\quote-layout.ps1'),[Text.Encoding]::UTF8)))
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\expressions.ps1'),[Text.Encoding]::UTF8)))
+. ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\headpat.ps1'),[Text.Encoding]::UTF8)))
 Initialize-WidgetQuoteLayouts $script:appDir
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase,System.Windows.Forms,System.Drawing
 Add-Type -TypeDefinition @'
@@ -95,6 +96,8 @@ $script:designHeight=[double]$script:window.FindName('AnimationStage').Height
 $script:ui=@{}
 foreach($name in @('Root','Bubble','Tail','TailNear','SceneText','QuotaText','QuoteText','BubbleShape','Girl','PressScale','FacingScale','TextFacingScale','Header','Refresh','MenuButton','Status','LiveDot','ShortRow','WeekRow','ShortLabel','WeekLabel','ShortUsed','ShortLeft','ShortReset','ShortBar','WeekUsed','WeekLeft','WeekReset','WeekBar')){$script:ui[$name]=$script:window.FindName($name)}
 Initialize-WidgetExpressions $script:appDir
+Initialize-WidgetHeadpatQuotes $script:appDir
+$script:headpatState=New-WidgetHeadpatState
 $script:status=$null
 $script:statusStamp=0
 $script:offsetRight=0.0;$script:offsetBottom=0.0;$script:offsetLeft=$null;$script:anchor='right';$script:side='right';$script:scale=1.0;$script:collapsed=$true
@@ -289,11 +292,11 @@ function Update-BubbleTooltip {
   $script:bubbleTooltipText.Text=[string]$copy
 }
 
-function Switch-Scene([string]$mode){
+function Switch-Scene([string]$mode,[string]$Quote='',[string]$Origin='manual'){
   if($script:collapsed){return}
-  $script:sceneOrigin='manual'
+  $script:sceneOrigin=$Origin
   $script:sceneRevision++;$script:bubbleMode=$mode
-  if($mode-eq 'quote'){$script:ui.QuoteText.Text=Get-WidgetBubbleQuote $script:dataDir;Fit-QuoteText}
+  if($mode-eq 'quote'){$script:ui.QuoteText.Text=if($Quote){$Quote}else{Get-WidgetBubbleQuote $script:dataDir};Fit-QuoteText}
   if($script:sceneTimer){$script:sceneTimer.Stop()}
   Animate-Value $script:ui.SceneText ([Windows.UIElement]::OpacityProperty) 0 120
   $script:sceneTimer=New-Object Windows.Threading.DispatcherTimer
@@ -323,13 +326,20 @@ function Click-Character {
 }
 function Show-Quota {Show-WidgetScene 'quota'}
 function Show-AmbientQuote {Show-WidgetScene 'quote' 'ambient'}
-function Show-WidgetScene([ValidateSet('quota','quote')][string]$Mode='quota',[ValidateSet('manual','ambient')][string]$Origin='manual'){
+function Invoke-WidgetHeadpat {
+  $row=Get-WidgetHeadpatQuote $script:headpatState
+  if(!$row){return}
+  Invoke-WidgetExpressionEvent 'interact'
+  Show-WidgetScene 'quote' 'headpat' -Quote $row.text
+  Animate-Headpat
+}
+function Show-WidgetScene([ValidateSet('quota','quote')][string]$Mode='quota',[ValidateSet('manual','ambient','headpat')][string]$Origin='manual',[string]$Quote=''){
   if($Origin-eq 'manual'){Invoke-WidgetExpressionEvent 'interact'}
   $script:sceneOrigin=$Origin
-  if(!$script:collapsed){if($script:bubbleMode-ne $Mode){Switch-Scene $Mode}else{Restart-SceneTtl};return}
+  if(!$script:collapsed){if($script:bubbleMode-ne $Mode -or $Quote){Switch-Scene $Mode -Quote $Quote -Origin $Origin}else{Restart-SceneTtl};return}
   $script:bubbleEpoch++;$script:collapsed=$false
   $script:bubbleMode=$Mode
-  if($Mode-eq 'quote'){$script:sceneRevision++;$script:ui.QuoteText.Text=Get-WidgetBubbleQuote $script:dataDir;Fit-QuoteText}
+  if($Mode-eq 'quote'){$script:sceneRevision++;$script:ui.QuoteText.Text=if($Quote){$Quote}else{Get-WidgetBubbleQuote $script:dataDir};Fit-QuoteText}
   Apply-Scene
   if($script:sceneTimer){$script:sceneTimer.Stop()}
   if($script:closeTimer){$script:closeTimer.Stop();$script:closeTimer=$null}
@@ -378,6 +388,19 @@ function Animate-Press([bool]$down) {
   $x=if($down){1.05}else{1.0};$y=if($down){0.88}else{1.0}
   Animate-Value $script:ui.PressScale ([Windows.Media.ScaleTransform]::ScaleXProperty) $x 220 0 $true
   Animate-Value $script:ui.PressScale ([Windows.Media.ScaleTransform]::ScaleYProperty) $y 220 0 $true
+}
+function Animate-Headpat {
+  foreach($axis in @(@{property=[Windows.Media.ScaleTransform]::ScaleXProperty;peak=1.015},@{property=[Windows.Media.ScaleTransform]::ScaleYProperty;peak=0.97})){
+    $animation=New-Object Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+    $animation.Duration=[Windows.Duration]::new([TimeSpan]::FromMilliseconds(480))
+    foreach($key in @(@{at=0;value=[double]$script:ui.PressScale.GetValue($axis.property)},@{at=130;value=$axis.peak},@{at=480;value=1.0})){
+      $frame=New-Object Windows.Media.Animation.SplineDoubleKeyFrame
+      $frame.KeyTime=[Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds($key.at));$frame.Value=$key.value
+      $frame.KeySpline=[Windows.Media.Animation.KeySpline]::new(0.25,0.1,0.25,1)
+      $animation.KeyFrames.Add($frame)|Out-Null
+    }
+    $script:ui.PressScale.BeginAnimation($axis.property,$animation)
+  }
 }
 function Request-Refresh {
   $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
@@ -559,6 +582,7 @@ foreach($control in @($script:ui.Girl,$script:ui.MenuButton)){
 $script:context.Add_Closed({$script:menuTimer.Start()})
 foreach($control in @($script:ui.Bubble,$script:ui.Tail,$script:ui.TailNear)){$control.Add_MouseLeftButtonUp({param($sender,$event)Next-Bubble;$event.Handled=$true})}
 $pressDown={param($sender,$event)
+  Reset-WidgetHeadpatGesture $script:headpatState
   Invoke-WidgetExpressionEvent 'press'
   $script:hostFollower.Suspend()
   $cursor=New-Object GptWidgetNative+Point;[GptWidgetNative]::GetCursorPos([ref]$cursor)|Out-Null
@@ -567,7 +591,17 @@ $pressDown={param($sender,$event)
   $sender.CaptureMouse()|Out-Null;Animate-Press $true;Play-WidgetPressSound;$event.Handled=$true
 }
 $pressMove={param($sender,$event)
-  if(!$script:drag){return}
+  if(!$script:drag){
+    $point=$event.GetPosition($script:ui.Girl)
+    $normalized=ConvertTo-WidgetSpritePoint $point.X $point.Y $script:ui.Girl.ActualWidth $script:ui.Girl.ActualHeight $script:bitmap.PixelWidth $script:bitmap.PixelHeight
+    if(!$normalized){return}
+    $pixelX=[int][Math]::Floor($normalized.x*$script:bitmap.PixelWidth);$pixelY=[int][Math]::Floor($normalized.y*$script:bitmap.PixelHeight)
+    $opaque=$pixelX-ge 0 -and $pixelY-ge 0 -and $pixelX-lt $script:bitmap.PixelWidth -and $pixelY-lt $script:bitmap.PixelHeight
+    if($opaque){$opaque=$script:alphaPixels[$pixelY*$script:alphaStride+$pixelX*4+3]-gt 10}
+    $blocked=$script:expressionState.pressed -or $script:context.IsOpen -or ($script:quoteEditor -and $script:quoteEditor.IsVisible) -or ($script:colorTriggerEditor -and $script:colorTriggerEditor.IsVisible)
+    if(Update-WidgetHeadpat $script:headpatState $normalized.x $normalized.y $opaque $blocked ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())){Invoke-WidgetHeadpat}
+    return
+  }
   $cursor=New-Object GptWidgetNative+Point;[GptWidgetNative]::GetCursorPos([ref]$cursor)|Out-Null
   $dx=$cursor.X-$script:drag.x;$dy=$cursor.Y-$script:drag.y
   if($dx*$dx+$dy*$dy-lt 9 -and !$script:drag.moved){return}
@@ -596,6 +630,7 @@ $pressUp={param($sender,$event)
   Save-Settings;$script:hostEventTimer.Start();$event.Handled=$true
 }
 $script:ui.Girl.Add_MouseLeftButtonDown($pressDown);$script:ui.Girl.Add_MouseMove($pressMove);$script:ui.Girl.Add_MouseLeftButtonUp($pressUp)
+$script:ui.Girl.Add_MouseLeave({Reset-WidgetHeadpatGesture $script:headpatState})
 $script:ui.Girl.Add_LostMouseCapture({
   Invoke-WidgetExpressionEvent 'release'
   if($script:drag){$script:drag=$null;Animate-Press $false;Stop-WidgetAudio;Save-Settings;$script:hostEventTimer.Start()}
