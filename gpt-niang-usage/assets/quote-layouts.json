@@ -179,7 +179,11 @@
     },
     {
       "text": "Token来Token来 🖐️😡🤚",
-      "display": "Token来Token来\n🖐️😡🤚"
+      "display": "Token来Token来\n🖐️😡🤚",
+      "layout": {
+        "fontSize": 26,
+        "width": 236
+      }
     },
     {
       "text": "看什么余额。看我，显得比较值。",
@@ -215,27 +219,667 @@
     },
     {
       "text": "这个问题我已经完全明白，但是token太少写不下。",
-      "display": "这个问题\n我已经完全明白，\n但是token太少写不下。"
+      "display": "这个问题\n我已经完全明白，\n但是token太少写不下。",
+      "layout": {
+        "fontSize": 20,
+        "width": 236
+      }
     },
     {
       "text": "这个代码我已经完全理解了，但是token太少写不下。",
-      "display": "这个代码\n我已经完全理解了，\n但是token太少写不下。"
+      "display": "这个代码\n我已经完全理解了，\n但是token太少写不下。",
+      "layout": {
+        "fontSize": 20,
+        "width": 236
+      }
     },
     {
       "text": "新的旗舰模型我已经研制好了，但是储存太小放不下。",
-      "display": "新的旗舰模型\n我已经研制好了，\n但是储存太小放不下。"
+      "display": "新的旗舰模型\n我已经研制好了，\n但是储存太小放不下。",
+      "layout": {
+        "fontSize": 21,
+        "width": 236
+      }
     },
     {
       "text": "高性能↓",
-      "display": "高性能↓"
+      "display": "高性能↓",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
     },
     {
       "text": "我不是吃白饭的大肥鱼",
-      "display": "我不是吃白饭的\n大肥鱼"
+      "display": "我不是吃白饭的\n大肥鱼",
+      "layout": {
+        "fontSize": 30,
+        "width": 236
+      }
     },
     {
       "text": "我是啥龙？",
-      "display": "我是啥龙？"
+      "display": "我是啥龙？",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "我在这儿。你继续忙。",
+      "display": "我在这儿。\n你继续忙。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "嗯，听着呢。下一步是什么？",
+      "display": "嗯，听着呢。\n下一步是什么？",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "今天的目标，先定一个就够。",
+      "display": "今天的目标，\n先定一个就够。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "事情一件件来，我先替你看着这儿。",
+      "display": "事情一件件来，\n我先替你看着这儿。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "没有新指令？那我继续值班。",
+      "display": "没有新指令？\n那我继续值班。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "嘿嘿，今天也能陪你一起忙。",
+      "display": "嘿嘿，\n今天也能陪你一起忙。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "有你在，值班都变得有意思了。",
+      "display": "有你在，\n值班都变得有意思了。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "今天的快乐，先从一个小点子开始。",
+      "display": "今天的快乐，\n先从一个小点子开始。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "想到好玩的事了？我也想听。",
+      "display": "想到好玩的事了？\n我也想听。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "看到你认真起来，我也跟着开心。",
+      "display": "看到你认真起来，\n我也跟着开心。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "嘿嘿，这次的思路真有意思。",
+      "display": "嘿嘿，\n这次的思路真有意思。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "小小的进步，我都看在眼里。",
+      "display": "小小的进步，\n我都看在眼里。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "今天的陪伴额度，不限量哦。",
+      "display": "今天的陪伴额度，\n不限量哦。",
+      "layout": {
+        "fontSize": 29,
+        "width": 236
+      }
+    },
+    {
+      "text": "你负责奇思妙想，我负责笑着捧场。",
+      "display": "你负责奇思妙想，\n我负责笑着捧场。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "别一直看我呀，我会不好意思的。",
+      "display": "别一直看我呀，\n我会不好意思的。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "突然夸我，我还没准备好呢。",
+      "display": "突然夸我，\n我还没准备好呢。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "才、才没有一直等你回来。",
+      "display": "才、才没有\n一直等你回来。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "你说我可爱？小声一点啦。",
+      "display": "你说我可爱？\n小声一点啦。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "喜欢这个小挂件？那我就多陪你一会儿。",
+      "display": "喜欢这个小挂件？\n那我就多陪你一会儿。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "靠近一点也可以，只是别突然吓我。",
+      "display": "靠近一点也可以，\n只是别突然吓我。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "你愿意留我在这儿，我其实挺开心的。",
+      "display": "你愿意留我在这儿，\n我其实挺开心的。",
+      "layout": {
+        "fontSize": 26,
+        "width": 236
+      }
+    },
+    {
+      "text": "谢谢你想起我。嗯，我听到了。",
+      "display": "谢谢你想起我。\n嗯，我听到了。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "让我想想，这一步还能怎么拆。",
+      "display": "让我想想，\n这一步还能怎么拆。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "如果换个角度，会不会更简单？",
+      "display": "如果换个角度，\n会不会更简单？",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "这个报错，是从哪一步开始的呢？",
+      "display": "这个报错，\n是从哪一步开始的呢？",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "先找共同点，再看看差别在哪里。",
+      "display": "先找共同点，\n再看看差别在哪里。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "先别急着改，想想它为什么这样。",
+      "display": "先别急着改，\n想想它为什么这样。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "把条件列出来，答案也许就藏在里面。",
+      "display": "把条件列出来，\n答案也许就藏在里面。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "诶？怎么突然就跑通了！",
+      "display": "诶？\n怎么突然就跑通了！",
+      "layout": {
+        "fontSize": 26,
+        "width": 236
+      }
+    },
+    {
+      "text": "哇，这个结果和想的不一样！",
+      "display": "哇，\n这个结果和想的不一样！",
+      "layout": {
+        "fontSize": 21,
+        "width": 236
+      }
+    },
+    {
+      "text": "等一下，你已经做到这一步啦？",
+      "display": "等一下，\n你已经做到这一步啦？",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "咦，刚才是不是有新点子？",
+      "display": "咦，\n刚才是不是有新点子？",
+      "layout": {
+        "fontSize": 22,
+        "width": 236
+      }
+    },
+    {
+      "text": "啊！原来开关藏在这里！",
+      "display": "啊！\n原来开关藏在这里！",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "你突然冒出来，吓我一小跳。",
+      "display": "你突然冒出来，\n吓我一小跳。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "这也能连起来？我还真没想到。",
+      "display": "这也能连起来？\n我还真没想到。",
+      "layout": {
+        "fontSize": 31,
+        "width": 236
+      }
+    },
+    {
+      "text": "诶，我刚才漏看了一行！",
+      "display": "诶，\n我刚才漏看了一行！",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "哈欠……脑袋也想缓冲一下。",
+      "display": "哈欠……\n脑袋也想缓冲一下。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "先眯一小会儿，别把我关掉哦。",
+      "display": "先眯一小会儿，\n别把我关掉哦。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "唔，清醒额度快见底了。",
+      "display": "唔，清醒额度\n快见底了。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "眼皮开始打架了，晚点再想难题吧。",
+      "display": "眼皮开始打架了，\n晚点再想难题吧。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "我还能陪你，就是反应有点慢啦。",
+      "display": "我还能陪你，\n就是反应有点慢啦。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "嗯……刚才差点把光标数睡着。",
+      "display": "嗯……\n刚才差点把光标数睡着。",
+      "layout": {
+        "fontSize": 21,
+        "width": 236
+      }
+    },
+    {
+      "text": "还没保存吗？我有一点担心。",
+      "display": "还没保存吗？\n我有一点担心。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "这个报错反复出现，先留一份备份吧。",
+      "display": "这个报错反复出现，\n先留一份备份吧。",
+      "layout": {
+        "fontSize": 26,
+        "width": 236
+      }
+    },
+    {
+      "text": "重要的那一版，记得另外存好哦。",
+      "display": "重要的那一版，\n记得另外存好哦。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "你盯屏幕太久了，眼睛会不会难受？",
+      "display": "你盯屏幕太久了，\n眼睛会不会难受？",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "别把自己逼太紧，我会担心的。",
+      "display": "别把自己逼太紧，\n我会担心的。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "先确认能恢复，再动这份文件吧。",
+      "display": "先确认能恢复，\n再动这份文件吧。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "嗨，回来啦！我在这边。",
+      "display": "嗨，回来啦！\n我在这边。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "早呀！今天也一起加油。",
+      "display": "早呀！\n今天也一起加油。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "晚上好，今天辛苦啦。",
+      "display": "晚上好，\n今天辛苦啦。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "路过也打个招呼，你好呀！",
+      "display": "路过也打个招呼，\n你好呀！",
+      "layout": {
+        "fontSize": 29,
+        "width": 236
+      }
+    },
+    {
+      "text": "我在这儿，抬头就能看见我。",
+      "display": "我在这儿，\n抬头就能看见我。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "好久不见，今天想做点什么？",
+      "display": "好久不见，\n今天想做点什么？",
+      "layout": {
+        "fontSize": 29,
+        "width": 236
+      }
+    },
+    {
+      "text": "要暂时离开吗？回来再见啦。",
+      "display": "要暂时离开吗？\n回来再见啦。",
+      "layout": {
+        "fontSize": 31,
+        "width": 236
+      }
+    },
+    {
+      "text": "收工啦？那明天见！",
+      "display": "收工啦？\n那明天见！",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "挥挥手，给认真工作的你。",
+      "display": "挥挥手，\n给认真工作的你。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "做到了！这一小步也值得庆祝。",
+      "display": "做到了！\n这一小步也值得庆祝。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "耶，跑通啦！给你一个大大的欢呼。",
+      "display": "耶，跑通啦！\n给你一个大大的欢呼。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "太棒了，难题又少了一个！",
+      "display": "太棒了，\n难题又少了一个！",
+      "layout": {
+        "fontSize": 29,
+        "width": 236
+      }
+    },
+    {
+      "text": "握拳！为今天的进步庆祝一下。",
+      "display": "握拳！\n为今天的进步庆祝一下。",
+      "layout": {
+        "fontSize": 21,
+        "width": 236
+      }
+    },
+    {
+      "text": "又完成一项，今天的你很能打！",
+      "display": "又完成一项，\n今天的你很能打！",
+      "layout": {
+        "fontSize": 29,
+        "width": 236
+      }
+    },
+    {
+      "text": "计划打上勾啦，耶！",
+      "display": "计划打上勾啦，\n耶！",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "这次成功啦！先开心三秒再继续。",
+      "display": "这次成功啦！\n先开心三秒再继续。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "你坚持下来了！这就值得欢呼。",
+      "display": "你坚持下来了！\n这就值得欢呼。",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "小小的胜利，也要认真庆祝！",
+      "display": "小小的胜利，\n也要认真庆祝！",
+      "layout": {
+        "fontSize": 32,
+        "width": 236
+      }
+    },
+    {
+      "text": "哼，说好的早点休息呢？",
+      "display": "哼，\n说好的早点休息呢？",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "又把我拖来拖去。我也是有脾气的。",
+      "display": "又把我拖来拖去。\n我也是有脾气的。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "抱起手了。这次得听我说完。",
+      "display": "抱起手了。\n这次得听我说完。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "才不只是个装饰，我也有认真值班。",
+      "display": "才不只是个装饰，\n我也有认真值班。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "慢慢来，我会在这里陪着你。",
+      "display": "慢慢来，\n我会在这里陪着你。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
+    },
+    {
+      "text": "没关系，试错也算往前走了一点。",
+      "display": "没关系，\n试错也算往前走了一点。",
+      "layout": {
+        "fontSize": 21,
+        "width": 236
+      }
+    },
+    {
+      "text": "今天已经很努力啦，对自己温柔一点。",
+      "display": "今天已经很努力啦，\n对自己温柔一点。",
+      "layout": {
+        "fontSize": 26,
+        "width": 236
+      }
+    },
+    {
+      "text": "暂时没想明白，也不用责怪自己。",
+      "display": "暂时没想明白，\n也不用责怪自己。",
+      "layout": {
+        "fontSize": 28,
+        "width": 236
+      }
+    },
+    {
+      "text": "不怕，我们从最小的一步开始。",
+      "display": "不怕，\n我们从最小的一步开始。",
+      "layout": {
+        "fontSize": 21,
+        "width": 236
+      }
+    },
+    {
+      "text": "先缓一口气，剩下的可以慢慢处理。",
+      "display": "先缓一口气，\n剩下的可以慢慢处理。",
+      "layout": {
+        "fontSize": 23,
+        "width": 236
+      }
+    },
+    {
+      "text": "合起手给你打气，这次也陪你慢慢来。",
+      "display": "合起手给你打气，\n这次也陪你慢慢来。",
+      "layout": {
+        "fontSize": 25,
+        "width": 236
+      }
     }
   ]
 }

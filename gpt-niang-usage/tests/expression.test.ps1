@@ -40,6 +40,12 @@ Assert-Equal (Get-WidgetQuoteExpression '辛苦啦，休息一下吧') sleepy 'C
 Assert-Equal (Get-WidgetQuoteExpression '不怕，我们慢慢来') comfort 'Custom reassurance uses the comforting gesture'
 Assert-Equal (Get-WidgetQuoteExpression '自定义的一句话') happy 'Unclassified custom text has a calm friendly fallback'
 Assert-Equal (Get-WidgetQuoteExpression '') happy 'Missing text has a safe fallback'
+Assert-Equal (Get-WidgetQuoteExpression '你说得对。……这次是真的。') neutral 'Deadpan agreement is neutral rather than bashful'
+Assert-Equal (Get-WidgetQuoteExpression '我是啥龙？') thinking 'An identity question is curious rather than startled'
+Assert-Equal (Get-WidgetQuoteExpression '突然夸我，我还没准备好呢。') shy 'An embarrassed response uses the blushing pose'
+Assert-Equal (Get-WidgetQuoteExpression '握拳！为今天的进步庆祝一下。') cheer 'Fist-raised celebration uses the cheering gesture'
+Assert-Equal (Get-WidgetQuoteExpression '抱起手了。这次得听我说完。') pout 'Folded arms use the grumpy gesture'
+Assert-Equal (Get-WidgetQuoteExpression '合起手给你打气，这次也陪你慢慢来。') comfort 'Clasped hands use the reassuring gesture'
 Register-WidgetExpressionEvent $state 'click' ($now+120000) -CurrentExpression sleepy
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+120001)) sleepy 'Quota click preserves the current ambient pose'
 Register-WidgetExpressionEvent $state 'quote' ($now+120100) -Quote 'Ciallo～ 今天也请多关照。'

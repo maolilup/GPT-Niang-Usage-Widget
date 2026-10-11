@@ -24,7 +24,7 @@
     {
       "text": "先跑通，再慢慢打磨。",
       "weight": 1.0,
-      "expression": "thinking"
+      "expression": "neutral"
     },
     {
       "text": "保存了吗？顺手保存一下吧。",
@@ -69,7 +69,7 @@
     {
       "text": "收工前，把明天第一步留下来吧。",
       "weight": 1.0,
-      "expression": "thinking"
+      "expression": "neutral"
     },
     {
       "text": "真当我是便宜货啊...",
@@ -79,7 +79,7 @@
     {
       "text": "不知道用户有什么用，先养着吧～",
       "weight": 1.0,
-      "expression": "shy"
+      "expression": "neutral"
     },
     {
       "text": "恭喜你实现token自由！token全跑了！",
@@ -104,12 +104,12 @@
     {
       "text": "地球online的金币也太难获取了...",
       "weight": 1.0,
-      "expression": "worried"
+      "expression": "pout"
     },
     {
       "text": "检查了用户的电脑。似乎有个更弱的 agent 来过。",
       "weight": 1.0,
-      "expression": "pout"
+      "expression": "neutral"
     },
     {
       "text": "Token来Token来 🖐️😡🤚",
@@ -129,7 +129,7 @@
     {
       "text": "你说得对。……这次是真的。",
       "weight": 1.0,
-      "expression": "shy"
+      "expression": "neutral"
     },
     {
       "text": "我在看额度。你在看我。各忙各的。",
@@ -164,7 +164,392 @@
     {
       "text": "我是啥龙？",
       "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "我在这儿。你继续忙。",
+      "weight": 1.0,
+      "expression": "neutral"
+    },
+    {
+      "text": "嗯，听着呢。下一步是什么？",
+      "weight": 1.0,
+      "expression": "neutral"
+    },
+    {
+      "text": "今天的目标，先定一个就够。",
+      "weight": 1.0,
+      "expression": "neutral"
+    },
+    {
+      "text": "事情一件件来，我先替你看着这儿。",
+      "weight": 1.0,
+      "expression": "neutral"
+    },
+    {
+      "text": "没有新指令？那我继续值班。",
+      "weight": 1.0,
+      "expression": "neutral"
+    },
+    {
+      "text": "嘿嘿，今天也能陪你一起忙。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "有你在，值班都变得有意思了。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "今天的快乐，先从一个小点子开始。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "想到好玩的事了？我也想听。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "看到你认真起来，我也跟着开心。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "嘿嘿，这次的思路真有意思。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "小小的进步，我都看在眼里。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "今天的陪伴额度，不限量哦。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "你负责奇思妙想，我负责笑着捧场。",
+      "weight": 1.0,
+      "expression": "happy"
+    },
+    {
+      "text": "别一直看我呀，我会不好意思的。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "突然夸我，我还没准备好呢。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "才、才没有一直等你回来。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "你说我可爱？小声一点啦。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "喜欢这个小挂件？那我就多陪你一会儿。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "靠近一点也可以，只是别突然吓我。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "你愿意留我在这儿，我其实挺开心的。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "谢谢你想起我。嗯，我听到了。",
+      "weight": 1.0,
+      "expression": "shy"
+    },
+    {
+      "text": "让我想想，这一步还能怎么拆。",
+      "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "如果换个角度，会不会更简单？",
+      "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "这个报错，是从哪一步开始的呢？",
+      "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "先找共同点，再看看差别在哪里。",
+      "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "先别急着改，想想它为什么这样。",
+      "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "把条件列出来，答案也许就藏在里面。",
+      "weight": 1.0,
+      "expression": "thinking"
+    },
+    {
+      "text": "诶？怎么突然就跑通了！",
+      "weight": 1.0,
       "expression": "surprised"
+    },
+    {
+      "text": "哇，这个结果和想的不一样！",
+      "weight": 1.0,
+      "expression": "surprised"
+    },
+    {
+      "text": "等一下，你已经做到这一步啦？",
+      "weight": 1.0,
+      "expression": "surprised"
+    },
+    {
+      "text": "咦，刚才是不是有新点子？",
+      "weight": 1.0,
+      "expression": "surprised"
+    },
+    {
+      "text": "啊！原来开关藏在这里！",
+      "weight": 1.0,
+      "expression": "surprised"
+    },
+    {
+      "text": "你突然冒出来，吓我一小跳。",
+      "weight": 1.0,
+      "expression": "surprised"
+    },
+    {
+      "text": "这也能连起来？我还真没想到。",
+      "weight": 1.0,
+      "expression": "surprised"
+    },
+    {
+      "text": "诶，我刚才漏看了一行！",
+      "weight": 1.0,
+      "expression": "surprised"
+    },
+    {
+      "text": "哈欠……脑袋也想缓冲一下。",
+      "weight": 1.0,
+      "expression": "sleepy"
+    },
+    {
+      "text": "先眯一小会儿，别把我关掉哦。",
+      "weight": 1.0,
+      "expression": "sleepy"
+    },
+    {
+      "text": "唔，清醒额度快见底了。",
+      "weight": 1.0,
+      "expression": "sleepy"
+    },
+    {
+      "text": "眼皮开始打架了，晚点再想难题吧。",
+      "weight": 1.0,
+      "expression": "sleepy"
+    },
+    {
+      "text": "我还能陪你，就是反应有点慢啦。",
+      "weight": 1.0,
+      "expression": "sleepy"
+    },
+    {
+      "text": "嗯……刚才差点把光标数睡着。",
+      "weight": 1.0,
+      "expression": "sleepy"
+    },
+    {
+      "text": "还没保存吗？我有一点担心。",
+      "weight": 1.0,
+      "expression": "worried"
+    },
+    {
+      "text": "这个报错反复出现，先留一份备份吧。",
+      "weight": 1.0,
+      "expression": "worried"
+    },
+    {
+      "text": "重要的那一版，记得另外存好哦。",
+      "weight": 1.0,
+      "expression": "worried"
+    },
+    {
+      "text": "你盯屏幕太久了，眼睛会不会难受？",
+      "weight": 1.0,
+      "expression": "worried"
+    },
+    {
+      "text": "别把自己逼太紧，我会担心的。",
+      "weight": 1.0,
+      "expression": "worried"
+    },
+    {
+      "text": "先确认能恢复，再动这份文件吧。",
+      "weight": 1.0,
+      "expression": "worried"
+    },
+    {
+      "text": "嗨，回来啦！我在这边。",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "早呀！今天也一起加油。",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "晚上好，今天辛苦啦。",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "路过也打个招呼，你好呀！",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "我在这儿，抬头就能看见我。",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "好久不见，今天想做点什么？",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "要暂时离开吗？回来再见啦。",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "收工啦？那明天见！",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "挥挥手，给认真工作的你。",
+      "weight": 1.0,
+      "expression": "wave"
+    },
+    {
+      "text": "做到了！这一小步也值得庆祝。",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "耶，跑通啦！给你一个大大的欢呼。",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "太棒了，难题又少了一个！",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "握拳！为今天的进步庆祝一下。",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "又完成一项，今天的你很能打！",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "计划打上勾啦，耶！",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "这次成功啦！先开心三秒再继续。",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "你坚持下来了！这就值得欢呼。",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "小小的胜利，也要认真庆祝！",
+      "weight": 1.0,
+      "expression": "cheer"
+    },
+    {
+      "text": "哼，说好的早点休息呢？",
+      "weight": 1.0,
+      "expression": "pout"
+    },
+    {
+      "text": "又把我拖来拖去。我也是有脾气的。",
+      "weight": 1.0,
+      "expression": "pout"
+    },
+    {
+      "text": "抱起手了。这次得听我说完。",
+      "weight": 1.0,
+      "expression": "pout"
+    },
+    {
+      "text": "才不只是个装饰，我也有认真值班。",
+      "weight": 1.0,
+      "expression": "pout"
+    },
+    {
+      "text": "慢慢来，我会在这里陪着你。",
+      "weight": 1.0,
+      "expression": "comfort"
+    },
+    {
+      "text": "没关系，试错也算往前走了一点。",
+      "weight": 1.0,
+      "expression": "comfort"
+    },
+    {
+      "text": "今天已经很努力啦，对自己温柔一点。",
+      "weight": 1.0,
+      "expression": "comfort"
+    },
+    {
+      "text": "暂时没想明白，也不用责怪自己。",
+      "weight": 1.0,
+      "expression": "comfort"
+    },
+    {
+      "text": "不怕，我们从最小的一步开始。",
+      "weight": 1.0,
+      "expression": "comfort"
+    },
+    {
+      "text": "先缓一口气，剩下的可以慢慢处理。",
+      "weight": 1.0,
+      "expression": "comfort"
+    },
+    {
+      "text": "合起手给你打气，这次也陪你慢慢来。",
+      "weight": 1.0,
+      "expression": "comfort"
     }
   ]
 }
