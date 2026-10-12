@@ -35,17 +35,17 @@ foreach($row in $builtIn.quotes){
 Assert-Equal (Get-WidgetQuoteExpression 'Ciallo～ 今天也请多关照。') wave 'Greeting waves'
 Assert-Equal (Get-WidgetQuoteExpression '小小的成功，也值得开心一下。') cheer 'Success celebrates'
 Assert-Equal (Get-WidgetQuoteExpression '休息一下，灵感也要充电。') sleepy 'Resting dialogue looks sleepy'
-Assert-Equal (Get-WidgetQuoteExpression '  我在看额度。你在看我。各忙各的。  ') shy 'Canonical text is trimmed before pairing'
+Assert-Equal (Get-WidgetQuoteExpression '  你看得这么认真，我都有点害羞了。  ') shy 'Canonical text is trimmed before pairing'
 Assert-Equal (Get-WidgetQuoteExpression '辛苦啦，休息一下吧') sleepy 'Custom resting text gets a matching mood'
 Assert-Equal (Get-WidgetQuoteExpression '不怕，我们慢慢来') comfort 'Custom reassurance uses the comforting gesture'
 Assert-Equal (Get-WidgetQuoteExpression '自定义的一句话') happy 'Unclassified custom text has a calm friendly fallback'
 Assert-Equal (Get-WidgetQuoteExpression '') happy 'Missing text has a safe fallback'
-Assert-Equal (Get-WidgetQuoteExpression '你说得对。……这次是真的。') neutral 'Deadpan agreement is neutral rather than bashful'
-Assert-Equal (Get-WidgetQuoteExpression '我是啥龙？') thinking 'An identity question is curious rather than startled'
-Assert-Equal (Get-WidgetQuoteExpression '突然夸我，我还没准备好呢。') shy 'An embarrassed response uses the blushing pose'
-Assert-Equal (Get-WidgetQuoteExpression '握拳！为今天的进步庆祝一下。') cheer 'Fist-raised celebration uses the cheering gesture'
-Assert-Equal (Get-WidgetQuoteExpression '抱起手了。这次得听我说完。') pout 'Folded arms use the grumpy gesture'
-Assert-Equal (Get-WidgetQuoteExpression '合起手给你打气，这次也陪你慢慢来。') comfort 'Clasped hands use the reassuring gesture'
+Assert-Equal (Get-WidgetQuoteExpression '这个角落坐着还挺舒服。') neutral 'Quiet small talk uses the neutral pose'
+Assert-Equal (Get-WidgetQuoteExpression '这个问题，我想多琢磨一会儿。') thinking 'Reflective dialogue uses the thinking pose'
+Assert-Equal (Get-WidgetQuoteExpression '夸我的时候，能小点声吗？') shy 'An embarrassed response uses the blushing pose'
+Assert-Equal (Get-WidgetQuoteExpression '开工开工，我这会儿劲头正足！') cheer 'Energetic dialogue uses the cheering gesture'
+Assert-Equal (Get-WidgetQuoteExpression '挪来挪去的，我都想收搬家费了。') pout 'A grumpy complaint uses the folded-arm gesture'
+Assert-Equal (Get-WidgetQuoteExpression '想安静待着的话，我陪你坐会儿。') comfort 'Reassuring dialogue uses the comforting gesture'
 Register-WidgetExpressionEvent $state 'click' ($now+120000) -CurrentExpression sleepy
 Assert-Equal (Get-WidgetExpressionName $state $null ($now+120001)) sleepy 'Quota click preserves the current ambient pose'
 Register-WidgetExpressionEvent $state 'quote' ($now+120100) -Quote 'Ciallo～ 今天也请多关照。'
@@ -87,7 +87,7 @@ Invoke-WidgetExpressionEvent 'press' ($now+12001)
 Invoke-WidgetExpressionEvent 'release' ($now+12030)
 Invoke-WidgetExpressionEvent 'click' ($now+12030)
 Assert-Equal $script:expressionCurrent happy 'Real quota click does not reset an ambient smile to neutral'
-Invoke-WidgetExpressionEvent 'quote' ($now+12100) -Quote '我在看额度。你在看我。各忙各的。'
+Invoke-WidgetExpressionEvent 'quote' ($now+12100) -Quote '你看得这么认真，我都有点害羞了。'
 Assert-Equal $script:expressionCurrent shy 'Real dialogue event applies the paired sprite'
 Invoke-WidgetExpressionEvent 'click' ($now+12200)
 Invoke-WidgetExpressionEvent 'quota' ($now+12200)

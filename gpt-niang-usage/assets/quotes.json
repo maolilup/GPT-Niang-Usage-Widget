@@ -37,7 +37,7 @@
       "expression": "happy"
     },
     {
-      "text": "不会也没关系，从一个例子开始。",
+      "text": "咱们挑个小例子，先试着做做看。",
       "weight": 1.0,
       "expression": "comfort"
     },
@@ -77,12 +77,12 @@
       "expression": "pout"
     },
     {
-      "text": "不知道用户有什么用，先养着吧～",
+      "text": "养用户这件事，我还在慢慢琢磨。",
       "weight": 1.0,
       "expression": "neutral"
     },
     {
-      "text": "恭喜你实现token自由！token全跑了！",
+      "text": "token跑得这么快，我都快追不上了！",
       "weight": 1.0,
       "expression": "surprised"
     },
@@ -107,7 +107,7 @@
       "expression": "pout"
     },
     {
-      "text": "检查了用户的电脑。似乎有个更弱的 agent 来过。",
+      "text": "我想跟隔壁agent比比谁更会摸鱼。",
       "weight": 1.0,
       "expression": "neutral"
     },
@@ -117,37 +117,37 @@
       "expression": "pout"
     },
     {
-      "text": "看什么余额。看我，显得比较值。",
+      "text": "你看得这么认真，我都有点害羞了。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "我没怕。那根甘蔗长得确实可疑。",
+      "text": "那根甘蔗看起来好可疑啊。",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "你说得对。……这次是真的。",
+      "text": "嗯，让我想一会儿。",
       "weight": 1.0,
       "expression": "neutral"
     },
     {
-      "text": "我在看额度。你在看我。各忙各的。",
+      "text": "你再靠近一点，我都要害羞了。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "这个问题我已经完全明白，但是token太少写不下。",
+      "text": "要紧的问题，记得留点token给我。",
       "weight": 1.0,
       "expression": "worried"
     },
     {
-      "text": "这个代码我已经完全理解了，但是token太少写不下。",
+      "text": "改代码的额度，我想留得宽裕一点。",
       "weight": 1.0,
       "expression": "worried"
     },
     {
-      "text": "新的旗舰模型我已经研制好了，但是储存太小放不下。",
+      "text": "我想要一台能提前下班的旗舰模型。",
       "weight": 1.0,
       "expression": "pout"
     },
@@ -157,1117 +157,1117 @@
       "expression": "sleepy"
     },
     {
-      "text": "我不是吃白饭的大肥鱼",
+      "text": "我想申请一个带零食的工位。",
       "weight": 1.0,
       "expression": "pout"
     },
     {
-      "text": "我是啥龙？",
+      "text": "我摸鱼的时候，也算在运行吗？",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "我在这儿。你继续忙。",
+      "text": "这个角落坐着还挺舒服。",
       "weight": 1.0,
       "expression": "neutral"
     },
     {
-      "text": "嗯，听着呢。下一步是什么？",
+      "text": "今天想安安静静地待一会儿。",
       "weight": 1.0,
       "expression": "neutral"
     },
     {
-      "text": "今天的目标，先定一个就够。",
+      "text": "我想给工位添个小靠垫。",
       "weight": 1.0,
       "expression": "neutral"
     },
     {
-      "text": "事情一件件来，我先替你看着这儿。",
+      "text": "唔，今天的安排听你的。",
       "weight": 1.0,
       "expression": "neutral"
     },
     {
-      "text": "没有新指令？那我继续值班。",
+      "text": "坐在这儿，刚好能看着你忙。",
       "weight": 1.0,
       "expression": "neutral"
     },
     {
-      "text": "嘿嘿，今天也能陪你一起忙。",
+      "text": "今天心情不错，想吃点甜的。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "有你在，值班都变得有意思了。",
+      "text": "要是能带杯奶茶来上班就好了。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "今天的快乐，先从一个小点子开始。",
+      "text": "我喜欢阳光照到桌边的时候。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "想到好玩的事了？我也想听。",
+      "text": "这个位置越坐越喜欢了。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "看到你认真起来，我也跟着开心。",
+      "text": "午饭想吃什么，我已经琢磨半天了。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "嘿嘿，这次的思路真有意思。",
+      "text": "能轻轻松松地过一下午真好。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "小小的进步，我都看在眼里。",
+      "text": "我想给今天留一点偷懒的时间。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "今天的陪伴额度，不限量哦。",
+      "text": "嘿嘿，突然想起件好玩的事。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "你负责奇思妙想，我负责笑着捧场。",
+      "text": "我打算把最后一块饼干留到下班。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "别一直看我呀，我会不好意思的。",
+      "text": "你这么盯着，我有点坐不住。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "突然夸我，我还没准备好呢。",
+      "text": "我脸上有东西吗？看得这么认真。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "才、才没有一直等你回来。",
+      "text": "今天这个位置，好像离你近了一点。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "你说我可爱？小声一点啦。",
+      "text": "想把我放中间的话，我得先缓缓。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "喜欢这个小挂件？那我就多陪你一会儿。",
+      "text": "唔……忽然觉得手有点多余。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "靠近一点也可以，只是别突然吓我。",
+      "text": "跟你待着的时候，时间过得挺快。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "你愿意留我在这儿，我其实挺开心的。",
+      "text": "夸我的时候，能小点声吗？",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "谢谢你想起我。嗯，我听到了。",
+      "text": "我想再待一会儿，就一会儿。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "让我想想，这一步还能怎么拆。",
+      "text": "这个问题，我想多琢磨一会儿。",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "如果换个角度，会不会更简单？",
+      "text": "让我捋一捋刚才想到哪儿了。",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "这个报错，是从哪一步开始的呢？",
+      "text": "我得给脑子腾个位置出来。",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "先找共同点，再看看差别在哪里。",
+      "text": "听上去有点意思，我再想想。",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "先别急着改，想想它为什么这样。",
+      "text": "要是能把想法摊在桌上就好了。",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "把条件列出来，答案也许就藏在里面。",
+      "text": "唔……这事可能得换个角度想。",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "诶？怎么突然就跑通了！",
+      "text": "诶，突然想起还有一件事！",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "哇，这个结果和想的不一样！",
+      "text": "等一下，我好像想到了！",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "等一下，你已经做到这一步啦？",
+      "text": "啊？还有这种让人头疼的题？",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "咦，刚才是不是有新点子？",
+      "text": "挂件居然也要参加面试吗？",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "啊！原来开关藏在这里！",
+      "text": "我刚才想到的那个好像有点不得了。",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "你突然冒出来，吓我一小跳。",
+      "text": "咦，原来还可以这么想啊。",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "这也能连起来？我还真没想到。",
+      "text": "突然被注意到，我还得准备一下。",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "诶，我刚才漏看了一行！",
+      "text": "糟了，差点把午饭给忘了！",
       "weight": 1.0,
       "expression": "surprised"
     },
     {
-      "text": "哈欠……脑袋也想缓冲一下。",
+      "text": "坐了这么久，眼皮都变重了。",
       "weight": 1.0,
       "expression": "sleepy"
     },
     {
-      "text": "先眯一小会儿，别把我关掉哦。",
+      "text": "唔……想眯个十分钟。",
       "weight": 1.0,
       "expression": "sleepy"
     },
     {
-      "text": "唔，清醒额度快见底了。",
+      "text": "这个岗位包午睡吗？",
       "weight": 1.0,
       "expression": "sleepy"
     },
     {
-      "text": "眼皮开始打架了，晚点再想难题吧。",
+      "text": "听着听着，就想找个枕头了。",
       "weight": 1.0,
       "expression": "sleepy"
     },
     {
-      "text": "我还能陪你，就是反应有点慢啦。",
+      "text": "午饭后的这一会儿最适合打个盹。",
       "weight": 1.0,
       "expression": "sleepy"
     },
     {
-      "text": "嗯……刚才差点把光标数睡着。",
+      "text": "今天想早点钻进被窝。",
       "weight": 1.0,
       "expression": "sleepy"
     },
     {
-      "text": "还没保存吗？我有一点担心。",
+      "text": "没保存的文件总让我惦记着。",
       "weight": 1.0,
       "expression": "worried"
     },
     {
-      "text": "这个报错反复出现，先留一份备份吧。",
+      "text": "先留个备份吧，我看着也踏实些。",
       "weight": 1.0,
       "expression": "worried"
     },
     {
-      "text": "重要的那一版，记得另外存好哦。",
+      "text": "报错突然消失的时候，我还挺心慌的。",
       "weight": 1.0,
       "expression": "worried"
     },
     {
-      "text": "你盯屏幕太久了，眼睛会不会难受？",
+      "text": "看见一堆改动，我就想先抱个备份。",
       "weight": 1.0,
       "expression": "worried"
     },
     {
-      "text": "别把自己逼太紧，我会担心的。",
+      "text": "明天还得从头来的话，今晚就有点难睡了。",
       "weight": 1.0,
       "expression": "worried"
     },
     {
-      "text": "先确认能恢复，再动这份文件吧。",
+      "text": "忘了刚才怎么做的，真的会急得转圈。",
       "weight": 1.0,
       "expression": "worried"
     },
     {
-      "text": "嗨，回来啦！我在这边。",
+      "text": "嗨，今天来得挺早呀。",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "早呀！今天也一起加油。",
+      "text": "我在这边，过来坐会儿呗。",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "晚上好，今天辛苦啦。",
+      "text": "今天想做点什么？我也想听听。",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "路过也打个招呼，你好呀！",
+      "text": "路过的时候，记得跟我打声招呼。",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "我在这儿，抬头就能看见我。",
+      "text": "开工啦，让我也打个卡。",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "好久不见，今天想做点什么？",
+      "text": "走的时候跟我说一声就好。",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "要暂时离开吗？回来再见啦。",
+      "text": "来都来了，聊两句嘛。",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "收工啦？那明天见！",
+      "text": "好久不见，最近过得怎么样？",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "挥挥手，给认真工作的你。",
+      "text": "喂，这儿还有个等着打招呼的。",
       "weight": 1.0,
       "expression": "wave"
     },
     {
-      "text": "做到了！这一小步也值得庆祝。",
+      "text": "今天的我还能再精神一会儿！",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "耶，跑通啦！给你一个大大的欢呼。",
+      "text": "午休要是能再长点就更好了！",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "太棒了，难题又少了一个！",
+      "text": "我现在特别想出去晒晒太阳。",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "握拳！为今天的进步庆祝一下。",
+      "text": "有精神的时候，做什么都顺眼一点。",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "又完成一项，今天的你很能打！",
+      "text": "下班前想给自己买点好吃的。",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "计划打上勾啦，耶！",
+      "text": "耶，今天想早点收工！",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "这次成功啦！先开心三秒再继续。",
+      "text": "我想把下午过得热闹一点。",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "你坚持下来了！这就值得欢呼。",
+      "text": "歇够了，现在能再忙一阵子！",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "小小的胜利，也要认真庆祝！",
+      "text": "开工开工，我这会儿劲头正足！",
       "weight": 1.0,
       "expression": "cheer"
     },
     {
-      "text": "哼，说好的早点休息呢？",
+      "text": "我的脸都要被你点热了。",
       "weight": 1.0,
       "expression": "pout"
     },
     {
-      "text": "又把我拖来拖去。我也是有脾气的。",
+      "text": "工位太小，我的零食往哪儿放啊。",
       "weight": 1.0,
       "expression": "pout"
     },
     {
-      "text": "抱起手了。这次得听我说完。",
+      "text": "挪来挪去的，我都想收搬家费了。",
       "weight": 1.0,
       "expression": "pout"
     },
     {
-      "text": "才不只是个装饰，我也有认真值班。",
+      "text": "我想申请一个提前下班的名额。",
       "weight": 1.0,
       "expression": "pout"
     },
     {
-      "text": "慢慢来，我会在这里陪着你。",
+      "text": "坐一会儿呗，手边的事晚点再想。",
       "weight": 1.0,
       "expression": "comfort"
     },
     {
-      "text": "没关系，试错也算往前走了一点。",
+      "text": "想安静待着的话，我陪你坐会儿。",
       "weight": 1.0,
       "expression": "comfort"
     },
     {
-      "text": "今天已经很努力啦，对自己温柔一点。",
+      "text": "今天就做到这儿吧，剩下的明天再说。",
       "weight": 1.0,
       "expression": "comfort"
     },
     {
-      "text": "暂时没想明白，也不用责怪自己。",
+      "text": "先把肩膀松下来，一直绷着怪累的。",
       "weight": 1.0,
       "expression": "comfort"
     },
     {
-      "text": "不怕，我们从最小的一步开始。",
+      "text": "想喝点什么吗？我想来杯热的。",
       "weight": 1.0,
       "expression": "comfort"
     },
     {
-      "text": "先缓一口气，剩下的可以慢慢处理。",
+      "text": "忙累了的时候，我也想找个人坐会儿。",
       "weight": 1.0,
       "expression": "comfort"
     },
     {
-      "text": "合起手给你打气，这次也陪你慢慢来。",
+      "text": "卡住就先歇一会儿，咱们缓缓。",
       "weight": 1.0,
       "expression": "comfort"
     },
     {
-      "text": "嘿，眨个眼，好运分你一半。",
+      "text": "嘘，摸鱼算我一份。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "这次的小惊喜，先替你藏着。",
+      "text": "歇五分钟呗，我给你望风。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "代码要认真，表情可以调皮。",
+      "text": "这件事先当咱们的小秘密。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "别盯太久呀，我会眨眼反击。",
+      "text": "偷偷歇会儿，手里的杯子拿稳点。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "嘘，这个笑容，只给你看一眼。",
+      "text": "我想到了一个装忙的好办法。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "今天也请多一点小机灵。",
+      "text": "零食分我一点，我帮你看着门。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "你负责灵感，我负责俏皮。",
+      "text": "咱俩摸鱼的时候还挺有默契的。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "眨眼不是报错，是打个招呼。",
+      "text": "我的工位，刚好适合偷偷打个盹。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "偶尔调皮一下，工作也会轻一点。",
+      "text": "开小差的时候，顺便带上我呗。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "看见没，这是胜利的眨眼。",
+      "text": "这张截图挑我好看的那面拍。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "嗯哼，这次挺像样嘛。",
+      "text": "你挑挂件的眼光挺好嘛。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "这个思路，值得竖个大拇指。",
+      "text": "我觉得这张脸值得多看两眼。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "交给我看着，你放心写。",
+      "text": "今天的我看着还挺精神。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "有一点厉害，允许你得意一下。",
+      "text": "让我得意一小会儿，我会自己停的。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "嘿嘿，这步走得很漂亮。",
+      "text": "挂在这儿，看着像个厉害角色。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "先给自己点赞，再继续下一步。",
+      "text": "这个位置确实衬得我好看。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "我就知道，你能想到这里。",
+      "text": "我对自己的外观还是挺有信心的。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "今天的你，配得上这声夸奖。",
+      "text": "再夸两句的话，我就更精神了。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "看我的拇指，答案已经很明显。",
+      "text": "这张脸，多少能撑撑场面。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "认可，请继续发挥。",
+      "text": "我挺喜欢你把我放在这里的。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "咦，这个点子是怎么想到的？",
+      "text": "你闲下来的时候，最想干什么？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "我有点好奇，下一步会怎样？",
+      "text": "这句话能再讲讲吗？我想听详细一点。",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "换个角度，会不会更有趣？",
+      "text": "这边的角落，是你特意挑的吗？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "这个现象，背后藏着什么呢？",
+      "text": "人类说摸鱼的时候，会想到鱼吗？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "你刚才那句话，我想再听听。",
+      "text": "挂件的工资，会按像素算吗？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "先别急着定论，多问一个为什么。",
+      "text": "你的午休一般能睡多久？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "头歪一点，思路会不会拐弯？",
+      "text": "你觉得我像哪一种性格的人？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "这条分支，有没有另一种走法？",
+      "text": "换个位置以后，看着会不一样吗？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "新鲜事出现了，让我凑近看看。",
+      "text": "我想问个小问题，可以吗？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "如果反过来想，结果会不同吗？",
+      "text": "点我之前，你在想什么？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "划个重点，先确认输入。",
+      "text": "给我一会儿，我想好好想清楚。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "认真看这里，边界条件别漏。",
+      "text": "引用这件事，我得认真查一遍。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "这一行很关键，值得再读一遍。",
+      "text": "这句话，我想再确认一下。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "先看证据，再决定怎么改。",
+      "text": "看完再说的话，我会踏实一点。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "一次确认一点，思路才不会散。",
+      "text": "这个问题值得多花点心思。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "注意这一点，结果要能复现。",
+      "text": "我想把这一处讲得明白一点。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "先把条件对齐，再比较输出。",
+      "text": "需要再确认的地方，我得单独记下来。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "关键路径清楚了，就从这里入手。",
+      "text": "说到这里，得把证据找全。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "细节别着急跳过，它可能藏着答案。",
+      "text": "我先确认一下刚才的想法。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "现在认真一点，后面少绕一点。",
+      "text": "这回想说得干净利落一点。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "哈哈，这也太有趣了。",
+      "text": "挂件要写日报的话，我能写满一页坐着。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "忍不住笑出声，你真有办法。",
+      "text": "按坐着的时长算，我能当个劳模了。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "这一句太妙了，让我乐一会儿。",
+      "text": "我的工位要是涨价，大概得按像素算。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "工作间隙，借你一点笑意。",
+      "text": "我的工位只够放半块饼干。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "笑一下吧，肩膀也松一点。",
+      "text": "要是摸鱼也算工时，我早就全勤了。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "好好笑，我先捂住嘴。",
+      "text": "我想到自己装忙的样子，又想笑了。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "今天的快乐，突然多了一格。",
+      "text": "考核挂件的时候，外观能单独算一科吗？",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "这么可爱的失误，修好再笑一遍。",
+      "text": "我把自己逗乐了，得笑一会儿。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "嘿嘿哈哈，我的快乐加载中。",
+      "text": "摸鱼的心得，我真能写一本了。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "笑声不用额度，这一份随便领。",
+      "text": "我想起件糗事，笑得停不下来了。",
       "weight": 1.0,
       "expression": "laugh"
     },
     {
-      "text": "有点感动，谢谢你这么认真。",
+      "text": "要把我收起来的时候，让我再坐一会儿嘛。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "被你的耐心暖到了。",
+      "text": "换模型的时候，能给我留个位置吗？",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "这份心意，我好好收下了。",
+      "text": "呜……眼睛湿湿的，有点看不清了。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "眼睛亮亮的，是开心的眼泪。",
+      "text": "笑得太过了，眼泪都出来了。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "你记得我，我很高兴。",
+      "text": "待在这里久了，我还挺舍不得的。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "今天的努力，我都看见啦。",
+      "text": "我也有容易委屈的时候嘛。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "能陪你到这里，有一点小感动。",
+      "text": "想再陪你待一小会儿，就这么一小会儿。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "别担心，这是被夸后的泪目。",
+      "text": "坐了这么久，我都快融进壁纸里了。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "那些小小的进步，也值得被珍惜。",
+      "text": "我也想听一句好听的话。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "谢谢你没有放弃，真的。",
+      "text": "要是可以存档，我想留下这一会儿。",
       "weight": 1.0,
       "expression": "teary"
     },
     {
-      "text": "偷偷笑一下，先不告诉你原因。",
+      "text": "我装忙的时候，看着应该挺像回事。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "有个小秘密，藏在这个笑里。",
+      "text": "老板来了的话，咱们就说在排查问题。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "我可没捣乱，只是有点偷乐。",
+      "text": "摸鱼的经验，我还可以跟你交流一下。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "嘘，惊喜还没到揭晓时。",
+      "text": "偷偷开个小差，桌面都变有趣了。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "你认真工作的样子，有点可爱哦。",
+      "text": "坐在这个角落，看热闹特别方便。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "这次的好消息，让我先偷着乐。",
+      "text": "这声笑，我已经憋了半天了。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "没笑你，我是在替你开心。",
+      "text": "我一想到偷懒，就有点藏不住。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "悄悄给今天，加一点小趣味。",
+      "text": "有人问起来的话，咱们口径得一致。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "我的坏心眼，只有一点点。",
+      "text": "挂在桌面上，也算挂名上班了。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "我就偷笑一会，很快就乖。",
+      "text": "我偶尔也想使点小坏。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "握紧拳，再试一次。",
+      "text": "我想再试一次，这回先想清楚。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "已经走到这里，继续往前吧。",
+      "text": "今天得做点事，我才好安心休息。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "目标放在眼前，一步一步靠近。",
+      "text": "犹豫了半天，我想动手试试了。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "有点难也没关系，这次稳稳地来。",
+      "text": "这件事，我还想再争取一下。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "不急着赢，先认真坚持。",
+      "text": "这回我想认真盯到最后。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "我准备好了，陪你再出发。",
+      "text": "开工吧，早点做完早点歇着。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "这一步下定决心，就踏实走完。",
+      "text": "我想把这个问题彻底弄明白。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "把力气攒好，去解决关键问题。",
+      "text": "总得想个办法，我再琢磨琢磨。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "还有办法可试，别太早放弃。",
+      "text": "我有点倔，还想继续试试。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "给自己一点底气，现在就开始。",
+      "text": "这一次，我想做得漂亮一点。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "不好意思，刚才没说清楚。",
+      "text": "刚才那句说得太满了，我得收回来。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "抱歉呀，让我重新说明。",
+      "text": "这回是我错了，我认。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "这次先低头，下次记得更仔细。",
+      "text": "对不起，我把话讲得太绝对了。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "我听到了，会认真记住。",
+      "text": "我说话容易嘴快，得放慢一点。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "对不起，让你多等了一会。",
+      "text": "这处我看漏了，又给你添事了。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "刚才有点冒失，现在重新来。",
+      "text": "讲漏的地方，我想再补一遍。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "谢谢你提醒我，这点确实要改。",
+      "text": "让你多费心了，抱歉呀。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "是我看漏了，补上这一处。",
+      "text": "刚才逞了点嘴快，现在有点后悔。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "先把误会说清，再继续一起做。",
+      "text": "我解释得有点绕，想再讲一遍。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "歉意收好，改进要跟上。",
+      "text": "说到自己的错，确实有点难抬头。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "托着腮等你，不着急。",
+      "text": "再坐一会儿，我就要开始数像素了。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "这一小会，适合放空一下。",
+      "text": "想找点小事做做，时间过得太慢了。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "还没准备好？我再等一会。",
+      "text": "我想给这工位添一把椅子。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "嗯……今天的云走得真慢。",
+      "text": "人类说的马上，一般得等好久。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "手边的事做完了，歇一小下。",
+      "text": "今天的风景，还是桌面这一小块。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "暂时没新消息，我就安静坐着。",
+      "text": "等得下巴都有点酸了，我换个姿势。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "发会儿呆，思路也许会自己来。",
+      "text": "随便叫我一声嘛，我快坐成壁纸了。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "等结果的时候，肩膀可以松下来。",
+      "text": "发着发着呆，就又到饭点了。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "我在这里，陪你慢慢等。",
+      "text": "我想叹口气，今天坐得有点久。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "下一件有趣的事，什么时候来呢？",
+      "text": "闲下来的时候，我喜欢盯着一处发呆。",
       "weight": 1.0,
       "expression": "bored"
     },
     {
-      "text": "绕晕了，先理清顺序。",
+      "text": "刚才谁先说等等的，我又绕回去了。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "信息有点多，让我缓一缓。",
+      "text": "想明白的那一段，好像又溜走了。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "这条链太长，先拆成几段。",
+      "text": "我得缓一下，脑子里有点乱。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "脑袋转圈圈，先从第一步看。",
+      "text": "绕着绕着，我都想问问自己了。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "等等，我刚才想到哪了？",
+      "text": "想一个问题，怎么还冒出来一堆问题。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "别一起改太多，我快跟不上啦。",
+      "text": "一句话改了好几遍，连我自己都绕晕了。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "这个逻辑绕了三圈，我们画出来吧。",
+      "text": "我脑子里的标签页开得有点多。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "先停一下，把线索摆整齐。",
+      "text": "条件一多，我就想先找张纸。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "晕乎乎也没关系，慢慢就清楚了。",
+      "text": "这一圈绕得，我都想坐下来歇歇了。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "把问题分开，脑袋就不打结。",
+      "text": "脑子里挤着几件事，得一件件拎出来。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "双手比个心，给认真的你。",
+      "text": "喏，这个算今天的见面礼。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "今天的陪伴，也有温柔的一份。",
+      "text": "今天心情好，想送你一个。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "这颗小心心，请好好收下。",
+      "text": "借你一个比心，月底记得还我。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "辛苦啦，送你一个比心。",
+      "text": "你看这边的时候，顺便笑一下呗。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "喜欢这段时光，有你一起就好。",
+      "text": "这颗心给你，拿去炫耀也行。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "把一点温暖，放在你手边。",
+      "text": "这个能留久一点，我摆了好半天呢。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "不管进度多少，都给你比个心。",
+      "text": "这会儿想挨着你坐一坐。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "谢谢你的耐心，这一颗送给你。",
+      "text": "你要是喜欢，我还能再比一个。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "我的心意，就藏在双手中。",
+      "text": "你要是笑了，我就也想笑。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "愿你今天，被温柔对待。",
+      "text": "放在你手边，看见的时候就想起我。",
       "weight": 1.0,
       "expression": "heart"
     },
     {
-      "text": "9.9 比 9.11 大，这次先对齐小数点。",
+      "text": "9.9和9.11，我得认真盯一会儿。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "别用两个小数，给我出期末考呀。",
+      "text": "又轮到小数比大小，我头都大了。",
       "weight": 1.0,
       "expression": "pout"
     },
     {
-      "text": "数字比大小，今天不按版本号排。",
+      "text": "小数比大小这事，咱们改天再考。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "小数点已经对齐，请验收这次答案。",
+      "text": "小数点看清楚以后，我腰杆都直了。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "题目越是简单，我越要再检查一遍。",
+      "text": "小数点的位置，我得再看一眼。",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "看到 9.11，先别脑补成日期。",
+      "text": "9.11写在这里，你会先想到什么？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "大模型也有小考，这道题认真答。",
+      "text": "小数那件事，我想重新考一回。",
       "weight": 1.0,
       "expression": "determined"
     },
     {
-      "text": "比大小这题，让我先拿张草稿纸。",
+      "text": "9.9和9.11，看得我都快重影了。",
       "weight": 1.0,
       "expression": "dizzy"
     },
     {
-      "text": "一本正经的表情，不代表答案都靠谱。",
+      "text": "说等一下的时候，我的语气特别熟练。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "引用先点开，别给想象力发论文。",
+      "text": "这篇论文的原文，我得先找到。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "刚才说得太顺了，容我检查一下来源。",
+      "text": "我该早点查来源的，刚才太急了。",
       "weight": 1.0,
       "expression": "apologetic"
     },
     {
-      "text": "嘴硬按钮已关闭，查证按钮已打开。",
+      "text": "想借我的名字请个假也行。",
       "weight": 1.0,
       "expression": "wink"
     },
     {
-      "text": "脑补很有画面感，事实还是得查一查。",
+      "text": "我想得有点绕，得慢慢捋回来。",
       "weight": 1.0,
       "expression": "thinking"
     },
     {
-      "text": "懂王模式暂停，不懂的先打个问号。",
+      "text": "这道题，你是怎么想到的？",
       "weight": 1.0,
       "expression": "curious"
     },
     {
-      "text": "论文找不到原文，就别替它编户口。",
+      "text": "编出来的论文，连我自己都找不到啊。",
       "weight": 1.0,
       "expression": "pout"
     },
     {
-      "text": "幻觉不是新技能，你发现了就提醒我。",
+      "text": "还有疑问的话，咱们一起再看看。",
       "weight": 1.0,
       "expression": "comfort"
     },
     {
-      "text": "作为一个语言模型，我先认真接住这句话。",
+      "text": "有空的话，咱们随便聊两句。",
       "weight": 1.0,
       "expression": "neutral"
     },
     {
-      "text": "你让我每句加喵，我差点忘了说正事。",
+      "text": "喵……这声我练了好久。",
       "weight": 1.0,
       "expression": "shy"
     },
     {
-      "text": "喵是语气词，不是新的模型参数。",
+      "text": "下次叫喵的时候，咱俩一起叫。",
       "weight": 1.0,
       "expression": "mischievous"
     },
     {
-      "text": "人设加载成功，正事也得继续完成。",
+      "text": "演个角色这件事，我倒是挺上心的。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "角色扮演可以，参考文献别跟着演。",
+      "text": "参考文献的事情，值得单独查一遍。",
       "weight": 1.0,
       "expression": "focused"
     },
     {
-      "text": "先别夸我是全能，我会偷偷有点得意。",
+      "text": "照这么夸下去，我能高兴一下午。",
       "weight": 1.0,
       "expression": "smug"
     },
     {
-      "text": "你负责提出问题，我负责尽量不嘴硬。",
+      "text": "有趣的事，记得也讲给我听听。",
       "weight": 1.0,
       "expression": "happy"
     },
     {
-      "text": "不是所有好听的话，都是正确的答案呀。",
+      "text": "慢慢讲，这会儿我听着呢。",
       "weight": 1.0,
       "expression": "comfort"
     }
