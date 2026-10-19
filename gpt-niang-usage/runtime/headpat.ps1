@@ -47,6 +47,7 @@ function Initialize-WidgetHeadpatQuotes([string]$AppDir){
   $script:headpatRandom=New-Object Random
 }
 function Get-WidgetHeadpatQuote($State){
+  if($script:widgetDialogueState){return Get-WidgetDialogueQuote $script:widgetDialogueState headpat -PreviousState $State}
   $candidates=@($script:headpatQuotes|Where-Object{$_.text-ne $State.lastQuote})
   if(!$candidates.Count){$candidates=@($script:headpatQuotes)}
   if(!$candidates.Count){return $null}

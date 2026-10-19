@@ -2,15 +2,15 @@
   if($script:quoteEditor -and $script:quoteEditor.IsVisible){$script:quoteEditor.Activate()|Out-Null;return}
   $editor=[Windows.Markup.XamlReader]::Parse(@'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- Title="GPT 娘 · 我的语录" Width="540" Height="480" MinWidth="440" MinHeight="340" ShowInTaskbar="False"
+ Title="GPT 娘 · 台词与表情配置" Width="720" Height="600" MinWidth="540" MinHeight="400" ShowInTaskbar="False"
  FontFamily="Microsoft YaHei UI" FontSize="14" Background="#FAF8FD" WindowStartupLocation="CenterScreen">
  <Grid Margin="22">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-  <TextBlock Margin="0,0,0,14" TextWrapping="Wrap" Foreground="#745A98" Text="一行一句语录。想让某句更常出现，可写：3 | 这句语录。"/>
-  <TextBox x:Name="Lines" Grid.Row="1" AcceptsReturn="True" AcceptsTab="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" FontSize="16" Padding="12" Background="White" BorderBrush="#DDD4EA"/>
+  <TextBlock Margin="0,0,0,14" TextWrapping="Wrap" Foreground="#745A98" Text="daily：日常；headpat：摸头；lowQuota：低额度。text 填台词，expression 填表情名，weight 填抽取权重。低额度还需填写 level。保存后下一句生效。"/>
+  <TextBox x:Name="Lines" Grid.Row="1" AcceptsReturn="True" AcceptsTab="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="NoWrap" FontFamily="Consolas, Microsoft YaHei UI" FontSize="14" Padding="12" Background="White" BorderBrush="#DDD4EA"/>
   <TextBlock x:Name="Feedback" Grid.Row="2" Margin="0,12,0,10" Foreground="#745A98" TextWrapping="Wrap"/>
   <Grid Grid.Row="3">
-   <Button x:Name="Defaults" Content="恢复内置语录" Padding="12,6" HorizontalAlignment="Left"/>
+   <Button x:Name="Defaults" Content="恢复全部内置台词" Padding="12,6" HorizontalAlignment="Left"/>
    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
     <Button x:Name="Save" Content="保存" Padding="20,6" Margin="0,0,10,0"/>
     <Button x:Name="Done" Content="关闭" Padding="20,6"/>
@@ -22,25 +22,26 @@
   $script:quoteEditor=$editor
   $editor.Owner=$script:window
   $lines=$editor.FindName('Lines');$feedback=$editor.FindName('Feedback')
-  $current=Get-WidgetQuoteSettings $script:dataDir
-  $lines.Text=($current.quotes|ForEach-Object{if($_.weight-eq 1){$_.text}else{([string]$_.weight)+' | '+$_.text}})-join [Environment]::NewLine
-  $feedback.Text=if($current.error){$current.error}else{'每条最多 200 字。语录在你的电脑上保存。'}
+  Sync-WidgetDialogueConfiguration -Force
+  try{$lines.Text=[IO.File]::ReadAllText($script:widgetDialogueState.path,[Text.Encoding]::UTF8)}catch{$lines.Text=$script:widgetDialogueState.current|ConvertTo-Json -Depth 8}
+  $editor.Tag=Get-WidgetDialogueFileSignature $script:widgetDialogueState.path
+  $feedback.Text=if($script:widgetDialogueState.error){$script:widgetDialogueState.error}else{$script:widgetDialogueState.path}
   $editor.FindName('Save').Add_Click({
     try{
-      $rows=@(foreach($line in ($script:quoteEditor.FindName('Lines').Text -split '\r?\n')){
-        $text=$line.Trim();if(!$text){continue}
-        if($text-match '^\s*(\d+(?:\.\d+)?)\s*\|\s*(.+)$'){@{text=$Matches[2].Trim();weight=[double]::Parse($Matches[1],[Globalization.CultureInfo]::InvariantCulture)}}
-        else{@{text=$text;weight=1}}
-      })
-      $saved=Save-WidgetQuotes $script:dataDir $rows
-      $script:quoteEditor.FindName('Feedback').Text="已保存 $($saved.quotes.Count) 句。下一次点击气泡时就会使用。"
+      if((Get-WidgetDialogueFileSignature $script:widgetDialogueState.path)-ne $script:quoteEditor.Tag){throw '配置文件已在外部修改，请关闭后重新打开编辑器，避免覆盖。'}
+      $value=$script:quoteEditor.FindName('Lines').Text|ConvertFrom-Json -ErrorAction Stop
+      $saved=Save-WidgetDialogueConfiguration $script:widgetDialogueState $value
+      $script:quoteEditor.Tag=Get-WidgetDialogueFileSignature $script:widgetDialogueState.path
+      $script:quoteEditor.FindName('Feedback').Text="已保存日常 $($saved.daily.Count) 句、摸头 $($saved.headpat.Count) 句、低额度 $($saved.lowQuota.Count) 句，下一句使用新配置。"
     }catch{$script:quoteEditor.FindName('Feedback').Text=$_.Exception.Message}
   })
   $editor.FindName('Defaults').Add_Click({
     try{
-      $restored=Reset-WidgetQuotes $script:dataDir
-      $script:quoteEditor.FindName('Lines').Text=($restored.quotes|ForEach-Object{$_.text})-join [Environment]::NewLine
-      $script:quoteEditor.FindName('Feedback').Text='已恢复内置语录，你的旧列表已备份。'
+      if((Get-WidgetDialogueFileSignature $script:widgetDialogueState.path)-ne $script:quoteEditor.Tag){throw '配置文件已在外部修改，请关闭后重新打开编辑器。'}
+      $restored=Reset-WidgetDialogueConfiguration $script:widgetDialogueState
+      $script:quoteEditor.FindName('Lines').Text=$restored|ConvertTo-Json -Depth 8
+      $script:quoteEditor.Tag=Get-WidgetDialogueFileSignature $script:widgetDialogueState.path
+      $script:quoteEditor.FindName('Feedback').Text='已恢复全部内置台词。之前的配置保存在 dialogue.json.bak。'
     }catch{$script:quoteEditor.FindName('Feedback').Text=$_.Exception.Message}
   })
   $editor.FindName('Done').Add_Click({$script:quoteEditor.Close()})
@@ -117,8 +118,10 @@ function Initialize-WidgetSettingsMenu {
   $script:settingsMenuUi.Bubble=Add-SettingsAction '查看额度' {if(!$script:collapsed -and $script:bubbleMode-eq 'quota'){Hide-Quota}else{Show-Quota}} -ReturnItem
   $script:settingsMenuUi.Quote=Add-SettingsAction '换一句台词' {if($script:collapsed){Show-Quota};Switch-Scene 'quote'} -ReturnItem
   Add-SettingsAction '刷新额度' {Request-Refresh}
-  Add-SettingsAction '编辑我的语录' {Open-QuoteEditor}
-  $script:settingsMenuUi.AutoDialogue=Add-SettingsAction '定时随机对话' {param($sender,$event)$script:autoDialogueEnabled=$sender.IsChecked;if(!$script:autoDialogueEnabled -and $script:sceneOrigin-eq 'ambient'){Hide-Quota};Reset-AmbientQuoteTimer;Save-Settings} -Description '静置45～90秒说一句；低额度时暂停' -Checkable -ReturnItem
+  Add-SettingsAction '编辑台词与表情' {Open-QuoteEditor}
+  Add-SettingsAction '打开台词配置文件' {Open-WidgetDialogueFile} -Description '保存后约 1～2 秒自动载入，下一句生效'
+  $script:settingsMenuUi.ReloadDialogue=Add-SettingsAction '重新载入台词' {Sync-WidgetDialogueConfiguration -Force} -ReturnItem
+  $script:settingsMenuUi.AutoDialogue=Add-SettingsAction '定时随机对话' {param($sender,$event)$script:autoDialogueEnabled=$sender.IsChecked;if(!$script:autoDialogueEnabled -and $script:sceneOrigin-eq 'ambient'){Hide-Quota};Reset-AmbientQuoteTimer;Save-Settings} -Description '静置45～90秒说一句；低额度使用专属台词' -Checkable -ReturnItem
   Add-SettingsDivider
   $script:settingsMenuUi.Expressions=Add-SettingsSubmenu '表情与动作' {
     $script:settingsMenuUi.ExpressionItems=@{}

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "daily": [
+    { "text": "今天心情不错，想吃点甜的。", "expression": "happy", "weight": 1 }
+  ],
+  "headpat": [
+    { "text": "唔……再摸一下嘛。", "expression": "sleepy", "weight": 1 }
+  ],
+  "lowQuota": [
+    { "text": "剩这点额度，得省着聊了。", "expression": "worried", "level": "low", "weight": 1 },
+    { "text": "最后这点额度，咱们留给要紧的事。", "expression": "worried", "level": "critical", "weight": 1 },
+    { "text": "等额度恢复，咱们接着聊。", "expression": "worried", "level": "empty", "weight": 1 }
+  ]
+}

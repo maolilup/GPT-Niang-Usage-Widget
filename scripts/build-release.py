@@ -37,7 +37,7 @@ required = {
 if not required.issubset(files):
     raise SystemExit("Required runtime files missing from the bundle")
 private_names = {
-    "installation.json", "settings.json", "runtime.json", "presence.json", "status.json",
+    "installation.json", "settings.json", "runtime.json", "presence.json", "status.json", "dialogue.json",
 }
 for name in files:
     path = Path(name)

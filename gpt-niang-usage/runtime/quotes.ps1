@@ -35,6 +35,9 @@ function Read-WidgetQuoteFile([string]$Path) {
 }
 
 function Get-WidgetQuoteSettings([string]$DataDir) {
+  if($script:widgetDialogueState -and $script:widgetDialogueState.dataDir-eq [IO.Path]::GetFullPath($DataDir)){
+    return [pscustomobject]@{source='dialogue-config';quotes=@($script:widgetDialogueState.current.daily);customPath=$script:widgetDialogueState.path;error=$script:widgetDialogueState.error}
+  }
   $customPath=Join-Path $DataDir 'quotes.json'
   $rows=@();$problem=$null;$source='built-in'
   if([IO.File]::Exists($customPath)){
@@ -54,6 +57,9 @@ function Get-WidgetQuoteSettings([string]$DataDir) {
 }
 
 function Get-WidgetQuote([string]$DataDir) {
+  if($script:widgetDialogueState -and $script:widgetDialogueState.dataDir-eq [IO.Path]::GetFullPath($DataDir)){
+    return (Get-WidgetDialogueQuote $script:widgetDialogueState daily).text
+  }
   $settings=Get-WidgetQuoteSettings $DataDir
   $key=[IO.Path]::GetFullPath($DataDir)
   $last=$script:widgetQuoteLastByDataDir[$key]

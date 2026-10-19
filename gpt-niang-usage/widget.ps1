@@ -17,6 +17,7 @@ $null=New-Item -ItemType Directory -Path $script:dataDir -Force
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\expressions.ps1'),[Text.Encoding]::UTF8)))
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\headpat.ps1'),[Text.Encoding]::UTF8)))
 . ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\low-quota.ps1'),[Text.Encoding]::UTF8)))
+. ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $script:appDir 'runtime\dialogue-config.ps1'),[Text.Encoding]::UTF8)))
 Initialize-WidgetQuoteLayouts $script:appDir
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase,System.Windows.Forms,System.Drawing
 Add-Type -TypeDefinition @'
@@ -101,6 +102,7 @@ Initialize-WidgetHeadpatQuotes $script:appDir
 $script:headpatState=New-WidgetHeadpatState
 Initialize-WidgetLowQuotaQuotes $script:appDir
 $script:lowQuotaState=New-WidgetLowQuotaState
+$script:widgetDialogueState=Initialize-WidgetDialogueConfiguration $script:appDir $script:dataDir -Create:(!$CheckOnly -and !$Preview)
 $script:status=$null
 $script:statusStamp=0
 $script:offsetRight=0.0;$script:offsetBottom=0.0;$script:offsetLeft=$null;$script:anchor='right';$script:side='right';$script:scale=1.0;$script:collapsed=$true
@@ -224,6 +226,19 @@ function Tick-Scene([long]$now){
   if($script:collapsed -or $script:sceneDeadline-le 0){return}
   if($now-ge $script:sceneDeadline){Hide-Quota;return}
   if($script:bubbleMode-eq 'quota' -and $script:resetTimeMode-ne 'fixed' -and $now-ge $script:sceneStartedAt+2000){Set-ResetTimeMode 'fixed' $now}
+}
+function Sync-WidgetDialogueConfiguration([long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(),[switch]$Force){
+  $previousError=$script:widgetDialogueState.error
+  $changed=Update-WidgetDialogueConfiguration $script:widgetDialogueState $Now -Force:$Force
+  $message=if($script:widgetDialogueState.error){'配置未载入，继续使用上次有效台词：'+$script:widgetDialogueState.error}else{'台词配置已载入：'+$script:widgetDialogueState.path}
+  if($script:settingsMenuUi -and $script:settingsMenuUi.ReloadDialogue){$script:settingsMenuUi.ReloadDialogue.ToolTip=$message}
+  if(($changed -or $Force -or $previousError-ne $script:widgetDialogueState.error) -and $script:quoteEditor -and $script:quoteEditor.IsVisible){$script:quoteEditor.FindName('Feedback').Text=$message}
+}
+function Open-WidgetDialogueFile {
+  try{
+    if(![IO.File]::Exists($script:widgetDialogueState.path)){Write-WidgetDialogueFile $script:widgetDialogueState $script:widgetDialogueState.current -NoOverwrite}
+    Invoke-Item -LiteralPath $script:widgetDialogueState.path
+  }catch{$script:ui.Status.Text=$_.Exception.Message}
 }
 function Get-AmbientQuoteDelay {
   if(!$script:ambientQuoteRandom){$script:ambientQuoteRandom=[Random]::new()}
@@ -751,12 +766,13 @@ function Tick-Widget {
     $script:window.Hide()
   }
   if($now-$script:lastPresence-ge 1000){
+    Sync-WidgetDialogueConfiguration $now
     Update-Quota
     Read-DisplayRequest
     Tick-LowQuotaDialogue $now ([bool]$visible) ($script:foregroundHost-eq $script:hostHandle -or $script:foregroundOwn)
     Tick-AmbientQuote $now ([bool]$visible) ($script:foregroundHost-eq $script:hostHandle -or $script:foregroundOwn)
     Update-WidgetExpression $now
-    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};ambientDialogue=@{enabled=$script:autoDialogueEnabled;paused=$script:ambientQuoteState.blocked;nextAt=$script:ambientQuoteState.nextAt;count=$script:ambientQuoteState.count;lastShownAt=$script:ambientQuoteState.lastShownAt};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;origin=$script:sceneOrigin;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
+    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};ambientDialogue=@{enabled=$script:autoDialogueEnabled;paused=$script:ambientQuoteState.blocked;nextAt=$script:ambientQuoteState.nextAt;count=$script:ambientQuoteState.count;lastShownAt=$script:ambientQuoteState.lastShownAt};dialogueConfig=@{path=$script:widgetDialogueState.path;reloads=$script:widgetDialogueState.reloads;loadedAt=$script:widgetDialogueState.loadedAt;error=$script:widgetDialogueState.error};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;origin=$script:sceneOrigin;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
     $script:lastPresence=$now
   }
   }finally{$script:updating=$false}

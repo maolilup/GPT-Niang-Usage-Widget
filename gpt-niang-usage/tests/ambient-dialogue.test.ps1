@@ -88,7 +88,7 @@ $script:window=[Windows.Markup.XamlReader]::Parse([IO.File]::ReadAllText((Join-P
 $script:ui=@{}
 foreach($name in @('Girl','QuoteText','SceneText','Bubble','Tail','TailNear','QuotaText','Refresh','LiveDot')){$script:ui[$name]=$script:window.FindName($name)}
 $script:status=$null;$script:collapsed=$true;$script:sceneTimer=$null;$script:closeTimer=$null;$script:refreshes=0
-function Get-WidgetBubbleQuote {return '挥挥手，给认真工作的你。'}
+function Get-WidgetBubbleQuote {return '嗨，今天来得挺早呀。'}
 function Fit-QuoteText {$script:ui.QuoteText.Tag=$script:ui.QuoteText.Text}
 function Animate-Value {}
 function Set-AnimatedValue {}

@@ -30,3 +30,5 @@ Windows 点击角色按「额度 → 对话 → 额度」循环，收起后的�
 交互实现范围见[DSH功能对照](DSH功能对照.md)，图片生成来源见[素材说明](assets/生成说明.md)。
 
 台词编写按 [角色与台词](assets/角色与台词.md) 中的人设与句式规范执行。日常、摸头和低额度台词已统一复查。
+
+Windows [台词配置](台词配置.md)：`runtime/dialogue-config.ps1` 负责 `dialogue.json` 的校验、自动重载、配套表情和旧语录迁移。右键可打开配置或使用内置 JSON 编辑器；示例见 `assets/dialogue.example.json`。

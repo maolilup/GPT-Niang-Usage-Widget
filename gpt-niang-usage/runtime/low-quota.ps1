@@ -30,6 +30,7 @@ function Initialize-WidgetLowQuotaQuotes([string]$AppDir){
   $script:lowQuotaRandom=New-Object Random
 }
 function Get-WidgetLowQuotaQuote($State,[string]$Level){
+  if($script:widgetDialogueState){return Get-WidgetDialogueQuote $script:widgetDialogueState lowQuota -Level $Level -PreviousState $State}
   $rows=@($script:lowQuotaQuotes|Where-Object{$_.level-eq $Level})
   $candidates=@($rows|Where-Object{$_.text-ne $State.lastQuote})
   if(!$candidates.Count){$candidates=$rows}
