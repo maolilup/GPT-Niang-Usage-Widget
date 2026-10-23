@@ -9,13 +9,15 @@
 - `runtime/watch.mjs` / `runtime/worker-state.mjs`：双平台共享的额度刷新与单实例 worker。
 - `runtime/thread-speed.mjs`：Mac 聊天速度面板的本地计数 helper，不代表实时模型速度。
 - `runtime/supervisor.ps1`：识别主窗口并自动恢复角色。
-- `runtime/host-layer.ps1`：独立原生窗口与主窗口的遮挡顺序，避免跨进程 owner 绑定。
+- `runtime/host-layer.ps1`：独立窗口的遮挡顺序；主窗口或挂件设置处于前台时临时置顶，切到其他应用后降级，避免跨进程 owner 绑定。
 - `runtime/expressions.ps1` / `assets/expressions/`：23 种表情与手势的选择、图片缓存和透明区域命中检测。
 - `runtime/ui-settings.ps1`：表情手选、定时随机对话开关和语录编辑等设置。
 - `assets/quotes.json` / `assets/quote-layouts.json`：254 句日常语录、逐句表情配对及气泡排版。
 - `runtime/headpat.ps1` / `assets/headpat-quotes.json`：不按键来回轻抚头顶的手势检测、冷却和 12 句专属回应。
 - `runtime/low-quota.ps1` / `assets/low-quota-quotes.json`：9 句低额度专属对话，按偏低、快用完和已用完分级触发。
 - `tests/`：额度解析、刷新队列、Windows 安装与生命周期、表情交互、摸头、低额度对话、定时对话、自适应尺寸，以及本地线程计数测试。
+
+在有可见前台窗口的交互桌面上，`tests\run-windows-tests.ps1 -InteractiveDesktop` 会额外执行前后台层级检查；无桌面的 CI 默认跳过该项。
 
 `installation.json` 在本机安装时生成，不包含在仓库中。Windows 默认个人数据位于 `%LOCALAPPDATA%\GPTNiangUsage\state`，停用后保留。Mac 数据位于 `~/Library/Application Support/GPTNiangUsage`；下载与安装说明见 [Mac README](../macos/README.md)。
 
