@@ -191,7 +191,7 @@ $script:widgetColors=@{halo=$halo;tint=$tint}
 Set-WidgetExpressionMode happy $now
 Assert-Equal $script:expressionCurrent happy 'Manual choice displays real happy sprite'
 Assert-Equal $script:bitmap.IsFrozen $true 'Decoded image is frozen'
-Assert-Equal $script:bitmap.PixelWidth 1254 'Expression uses its own decoded dimensions'
+Assert-Equal $script:bitmap.PixelWidth 512 'Expression decodes within the display resource budget'
 Assert-Same $script:bitmap $script:ui.Girl.Source 'Visible image and alpha bitmap source are synchronized'
 Assert-Same $script:bitmap $mask.ImageSource 'Colour opacity mask follows current sprite'
 Assert-Same $halo.Fill $flow 'Expression does not replace animated colour brush'
@@ -210,7 +210,7 @@ foreach($row in Get-WidgetExpressionRegistry){
   Set-WidgetExpressionMode $row.name $now
   Assert-Equal $script:expressionCurrent $row.name ('Registered art decodes without falling back: '+$row.name)
   Assert-Same $script:bitmap $script:ui.Girl.Source 'Eviction never separates visible art from the active bitmap'
-  Assert-Equal ($script:expressionCache.Count-le 6) $true 'Decoded sprite cache stays bounded across the complete library'
+  Assert-Equal ($script:expressionCacheBytes-le 48MB) $true 'Decoded sprite cache stays within its byte budget'
 }
 $recent=$script:bitmap;$recentAlpha=$script:alphaPixels
 Set-WidgetExpressionMode heart $now
@@ -218,7 +218,7 @@ Assert-Same $script:bitmap $recent 'Most recent sprite is reused after visiting 
 Assert-Same $script:alphaPixels $recentAlpha 'Most recent hit mask is reused without another decode'
 Set-WidgetExpressionMode neutral $now
 Assert-Equal $script:expressionCurrent neutral 'Evicted original sprite can be decoded again safely'
-Assert-Equal ($script:expressionCache.Count-le 6) $true 'Reloading an evicted sprite does not grow the cache'
+Assert-Equal ($script:expressionCacheBytes-le 48MB) $true 'Revisiting a sprite stays within the byte budget'
 
 # Tiny fixtures verify variant dimensions and transparent click-through, independent of generated art.
 $fixture=Join-Path ([IO.Path]::GetTempPath()) ('gpt-niang-expression-'+[Guid]::NewGuid().ToString('N'))

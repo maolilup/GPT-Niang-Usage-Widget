@@ -1,4 +1,4 @@
-# Selection uses explicit timestamps. Recent bitmaps and hit masks share a bounded cache.
+# Selection uses explicit timestamps. Small decoded sprites share a byte-bounded cache.
 $script:expressionRegistry=@(
   @{name='neutral';label='默认';file='assets\gpt-dragon-niang-bust.png'},
   @{name='happy';label='开心';file='assets\expressions\happy.png'},
@@ -171,24 +171,39 @@ function Get-WidgetExpressionAsset([string]$Name){
     if(!$row){throw 'Unknown expression.'}
     $stream=[IO.File]::OpenRead((Join-Path $script:expressionAppDir $row.file))
     try{
+      # Read only PNG dimensions before WIC decodes. Never upscale small custom art.
+      $header=New-Object byte[] 24
+      if($stream.Read($header,0,24)-ne 24 -or [BitConverter]::ToString($header,0,8)-ne '89-50-4E-47-0D-0A-1A-0A'){throw 'Invalid PNG header.'}
+      $width=[Net.IPAddress]::NetworkToHostOrder([BitConverter]::ToInt32($header,16))
+      $height=[Net.IPAddress]::NetworkToHostOrder([BitConverter]::ToInt32($header,20))
+      if($width-le 0 -or $height-le 0){throw 'Invalid PNG dimensions.'}
+      $stream.Position=0
       $image=[Windows.Media.Imaging.BitmapImage]::new()
       $image.BeginInit();$image.CacheOption=[Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+      if([Math]::Max($width,$height)-gt 512){if($width-ge $height){$image.DecodePixelWidth=512}else{$image.DecodePixelHeight=512}}
       $image.StreamSource=$stream;$image.EndInit();$image.Freeze()
     }finally{$stream.Dispose()}
     $alpha=[Windows.Media.Imaging.FormatConvertedBitmap]::new($image,[Windows.Media.PixelFormats]::Bgra32,$null,0)
     $stride=$image.PixelWidth*4;$pixels=New-Object byte[] ($stride*$image.PixelHeight)
     $alpha.CopyPixels($pixels,$stride,0);$alpha.Freeze()
-    $asset=@{name=$Name;bitmap=$image;alphaBitmap=$alpha;stride=$stride;pixels=$pixels}
+    # Detach the retained sprite from the WIC decoder/stream/conversion graph.
+    $bitmap=[Windows.Media.Imaging.BitmapSource]::Create($image.PixelWidth,$image.PixelHeight,96,96,[Windows.Media.PixelFormats]::Bgra32,$null,$pixels,$stride)
+    $bitmap.Freeze()
+    $asset=@{name=$Name;bitmap=$bitmap;alphaBitmap=$bitmap;stride=$stride;pixels=$pixels;bytes=2L*$pixels.Length}
+    $script:expressionDecodeCount++
   }catch{
     if($Name-eq 'neutral'){throw}
     $asset=Get-WidgetExpressionAsset 'neutral'
   }
-  # Keep recent sprites only: a larger expression library must not retain every decoded PNG.
-  while($script:expressionCacheOrder.Count-ge 6){
+  # The complete current library fits: idle cycling must not churn native decoders.
+  # Keep an LRU byte/entry budget for a larger future or custom catalogue.
+  while($script:expressionCacheOrder.Count-gt 0 -and ($script:expressionCacheOrder.Count-ge 32 -or $script:expressionCacheBytes+$asset.bytes-gt 48MB)){
     $old=$script:expressionCacheOrder[0];$script:expressionCacheOrder.RemoveAt(0)
+    $script:expressionCacheBytes-=$script:expressionCache[$old].bytes
     $script:expressionCache.Remove($old)
   }
   $script:expressionCache[$Name]=$asset
+  $script:expressionCacheBytes+=$asset.bytes
   $script:expressionCacheOrder.Add($Name)
   return $asset
 }
@@ -207,7 +222,7 @@ function Update-WidgetExpression([long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeM
   }
 }
 function Initialize-WidgetExpressions([string]$AppDir,[long]$Now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()){
-  $script:expressionAppDir=$AppDir;$script:expressionCache=@{}
+  $script:expressionAppDir=$AppDir;$script:expressionCache=@{};$script:expressionCacheBytes=0L;$script:expressionDecodeCount=0L
   $script:expressionCacheOrder=[Collections.Generic.List[string]]::new()
   Initialize-WidgetQuoteExpressions $AppDir
   $script:expressionState=New-WidgetExpressionState $Now;$script:expressionMode='auto'

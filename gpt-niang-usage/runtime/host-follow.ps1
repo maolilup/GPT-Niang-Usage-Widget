@@ -15,7 +15,7 @@ public sealed class GptWidgetHostFollower : IDisposable {
  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
  [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
  [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h,IntPtr after,int x,int y,int w,int z,uint flags);
- [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h,int command);
+ [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr h,int command);
  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h,out uint processId);
  [DllImport("user32.dll")] static extern int SetWindowRgn(IntPtr h,IntPtr region,bool redraw);
  [DllImport("gdi32.dll")] static extern IntPtr CreateRectRgn(int left,int top,int right,int bottom);
@@ -79,7 +79,7 @@ public sealed class GptWidgetHostFollower : IDisposable {
  public bool Synchronize(){
   if(disposed||!enabled||!IsWindow(host)||!IsWindow(widget))return false;
   if(!IsWindowVisible(host)||IsIconic(host)){
-   ShowWindow(widget,0);hiddenByHost=true;return false;
+   ShowWindowAsync(widget,0);hiddenByHost=true;return false;
   }
   Rect frame,current;if(!GetWindowRect(host,out frame))return false;
   if(!LayoutDirty&&(frame.Right-frame.Left!=hostWidth||frame.Bottom-frame.Top!=hostHeight)){
@@ -99,11 +99,11 @@ public sealed class GptWidgetHostFollower : IDisposable {
   }
   if(!GetWindowRect(widget,out current)||current.Left!=x||current.Top!=y){
    // Position only: WPF owns size and rendering. No resize, activation or
-   // z-order changes, and no queued asynchronous SetWindowPos operation.
-   if(!SetWindowPos(widget,IntPtr.Zero,x,y,0,0,0x15))return false;
+   // z-order changes. Avoid waiting across foreign input queues.
+   if(!SetWindowPos(widget,IntPtr.Zero,x,y,0,0,0x4415))return false;
    PositionChanges++;
   }
-  if(hiddenByHost){ShowWindow(widget,4);hiddenByHost=false;}
+  if(hiddenByHost){ShowWindowAsync(widget,4);hiddenByHost=false;}
   return true;
  }
  void ReleaseHooks(){

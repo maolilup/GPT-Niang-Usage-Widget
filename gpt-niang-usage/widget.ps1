@@ -712,6 +712,11 @@ function Tick-Widget {
   $script:updating=$true
   try{
   $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+  if($now-$script:lastResourceProbe-ge 10000){
+    $process=[Diagnostics.Process]::GetCurrentProcess()
+    try{Write-WidgetJson (Join-Path $script:dataDir 'resource-status.json') @{pid=$PID;at=$now;privateBytes=$process.PrivateMemorySize64;workingSetBytes=$process.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;policy='512px-48MiB-independent-window-v1'}}finally{$process.Dispose()}
+    $script:lastResourceProbe=$now
+  }
   Tick-Scene $now
   Update-WidgetExpression $now
   if($now-$script:lastPresence-ge 1000 -and (Test-Path -LiteralPath (Join-Path $script:dataDir 'stop.flag'))){$script:window.Close();return}
@@ -751,7 +756,7 @@ function Tick-Widget {
       $y=[int][Math]::Max($frame.Top,$frame.Bottom-$h-$script:offsetBottom*$dpi)
       $position="$($script:hostHandle):$x,$y,$w,$h"
       if($position-ne $script:lastPosition){
-        [GptWidgetNative]::SetWindowPos($script:widgetHandle,[IntPtr]::Zero,$x,$y,$w,$h,0x14)|Out-Null
+        [GptWidgetNative]::SetWindowPos($script:widgetHandle,[IntPtr]::Zero,$x,$y,$w,$h,0x4414)|Out-Null
         $script:lastPosition=$position
         if($script:context.IsOpen){Set-WidgetMenuBounds;Position-WidgetMenuToHost}
       }
@@ -762,7 +767,7 @@ function Tick-Widget {
     $script:hostFollower.Suspend()
     $script:context.IsOpen=$false
     # Also return any owned quote editor to the normal band before hiding the overlay.
-    [GptWidgetNative]::SetWindowPos($script:widgetHandle,[IntPtr](-2),0,0,0,0,0x13)|Out-Null
+    [GptWidgetNative]::SetWindowPos($script:widgetHandle,[IntPtr](-2),0,0,0,0,0x4413)|Out-Null
     $script:window.Hide()
   }
   if($now-$script:lastPresence-ge 1000){

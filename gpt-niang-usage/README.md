@@ -9,7 +9,7 @@
 - `runtime/watch.mjs` / `runtime/worker-state.mjs`：双平台共享的额度刷新与单实例 worker。
 - `runtime/thread-speed.mjs`：Mac 聊天速度面板的本地计数 helper，不代表实时模型速度。
 - `runtime/supervisor.ps1`：识别主窗口并自动恢复角色。
-- `runtime/host-layer.ps1`：主窗口归属与遮挡顺序。
+- `runtime/host-layer.ps1`：独立原生窗口与主窗口的遮挡顺序，避免跨进程 owner 绑定。
 - `runtime/expressions.ps1` / `assets/expressions/`：23 种表情与手势的选择、图片缓存和透明区域命中检测。
 - `runtime/ui-settings.ps1`：表情手选、定时随机对话开关和语录编辑等设置。
 - `assets/quotes.json` / `assets/quote-layouts.json`：254 句日常语录、逐句表情配对及气泡排版。

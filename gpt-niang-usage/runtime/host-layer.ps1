@@ -29,14 +29,12 @@ function Set-WidgetAboveHost([IntPtr]$Widget,[IntPtr]$HostWindowHandle){
     return [pscustomobject]@{ok=$false;changed=$false;reason='host-not-visible'}
   }
   $key=$Widget.ToInt64().ToString();$changed=$false
-  # A scheduler-owned background process cannot reliably insert an unowned
-  # overlay above the active app. Native ownership keeps both in one layer.
-  # WPF receives Closed when its owner is destroyed; the supervisor recreates
-  # the GUI for the next real main window.
-  if([GptWidgetZOrderNative]::GetWindowLongPtr($Widget,-8)-ne $HostWindowHandle){
-    [GptWidgetZOrderNative]::SetWindowLongPtr($Widget,-8,$HostWindowHandle)|Out-Null
-    if([GptWidgetZOrderNative]::GetWindowLongPtr($Widget,-8)-ne $HostWindowHandle){
-      return [pscustomobject]@{ok=$false;changed=$false;reason='owner-attachment-failed'}
+  # Keep separate native ownership/input queues. A hung overlay must not couple
+  # the host's activation, teardown or message processing to its own UI thread.
+  if([GptWidgetZOrderNative]::GetWindowLongPtr($Widget,-8)-ne [IntPtr]::Zero){
+    [GptWidgetZOrderNative]::SetWindowLongPtr($Widget,-8,[IntPtr]::Zero)|Out-Null
+    if([GptWidgetZOrderNative]::GetWindowLongPtr($Widget,-8)-ne [IntPtr]::Zero){
+      return [pscustomobject]@{ok=$false;changed=$false;reason='owner-detachment-failed'}
     }
     $changed=$true
   }
@@ -44,7 +42,7 @@ function Set-WidgetAboveHost([IntPtr]$Widget,[IntPtr]$HostWindowHandle){
   $widgetBand=[GptWidgetZOrderNative]::Topmost($Widget)
   if(!$script:gptZOrderBands.ContainsKey($key) -or $script:gptZOrderBands[$key]-ne $hostBand -or $widgetBand-ne $hostBand){
     $band=if($hostBand){[IntPtr](-1)}else{[IntPtr](-2)}
-    if(![GptWidgetZOrderNative]::SetWindowPos($Widget,$band,0,0,0,0,0x13)){
+    if(![GptWidgetZOrderNative]::SetWindowPos($Widget,$band,0,0,0,0,0x4413)){
       return [pscustomobject]@{ok=$false;changed=$false;reason='band-change-failed'}
     }
     $script:gptZOrderBands[$key]=$hostBand;$changed=$true
@@ -55,7 +53,7 @@ function Set-WidgetAboveHost([IntPtr]$Widget,[IntPtr]$HostWindowHandle){
   if($previous-eq $Widget){return [pscustomobject]@{ok=$true;changed=$changed;adjacent=$true;hostTopmost=$hostBand}}
   $after=$previous
   if($after-eq [IntPtr]::Zero -or (!$hostBand -and [GptWidgetZOrderNative]::Topmost($after))){$after=[IntPtr]::Zero}
-  if(![GptWidgetZOrderNative]::SetWindowPos($Widget,$after,0,0,0,0,0x13)){
+  if(![GptWidgetZOrderNative]::SetWindowPos($Widget,$after,0,0,0,0,0x4413)){
     return [pscustomobject]@{ok=$false;changed=$changed;reason='placement-failed'}
   }
   $adjacent=[GptWidgetZOrderNative]::PreviousVisible($HostWindowHandle)-eq $Widget

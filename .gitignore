@@ -10,6 +10,8 @@
 **/*.bak
 **/node_modules/
 .test-state/
+/test-temp/
+**/resource-fault.json
 dist/
 *.zip
 Thumbs.db

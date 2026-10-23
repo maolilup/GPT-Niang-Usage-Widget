@@ -41,6 +41,29 @@ function Stop-WidgetGui {
   throw 'The previous widget did not stop within 6 seconds.'
 }
 
+function Get-WidgetResourceFault($Process,$Presence,[long]$Now){
+  if($Process.PrivateMemorySize64-gt 512MB){return 'memory-limit'}
+  $started=[DateTimeOffset]::new($Process.StartTime.ToUniversalTime()).ToUnixTimeMilliseconds()
+  if($Now-$started-lt 60000){return ''}
+  if(!$Presence -or $Presence.pid-ne $Process.Id){return 'heartbeat-timeout'}
+  $at=0L
+  if(![long]::TryParse([string]$Presence.at,[ref]$at)){return 'heartbeat-timeout'}
+  $age=$Now-$at
+  if($age-lt 0 -or $age-gt 30000){return 'heartbeat-timeout'}
+  return ''
+}
+
+function Stop-WidgetResourceFault($Process,[string]$AppDir,[string]$DataDir,[string]$Reason){
+  # Recheck the executable and exact widget path before ending any process.
+  $target=Get-CimInstance Win32_Process -Filter ('ProcessId='+$Process.Id) -ErrorAction Stop
+  if(!$target -or $target.Name-notin @('powershell.exe','pwsh.exe') -or !$target.CommandLine -or !$target.CommandLine.Contains('"'+(Join-Path $AppDir 'widget.ps1')+'"')){return $false}
+  if(!$target.CreationDate -or [Math]::Abs(($target.CreationDate.ToUniversalTime()-$Process.StartTime.ToUniversalTime()).TotalMilliseconds)-gt 1){return $false}
+  Write-WidgetSupervisorJson (Join-Path $DataDir 'resource-fault.json') @{pid=$Process.Id;at=[DateTime]::UtcNow.ToString('o');reason=$Reason;privateBytes=$Process.PrivateMemorySize64;action='disabled-until-manual-open'}
+  Disable-WidgetSupervisor -AppDir $AppDir
+  Stop-Process -Id $Process.Id -ErrorAction Stop
+  return $true
+}
+
 function Get-WidgetSupervisorInfo {
   param([Parameter(Mandatory=$true)][string]$AppDir,$Configuration=$null)
   $root=[IO.Path]::GetFullPath($AppDir).TrimEnd('\')

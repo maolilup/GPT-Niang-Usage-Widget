@@ -89,6 +89,7 @@ $nextLaunch=[DateTime]::MinValue
 $nextStatus=[DateTime]::MinValue
 $lastVisibleHostKey=''
 $pendingGui=$null
+$faultPid=0;$faultSamples=0
 $supervisorProcess=Get-Process -Id $PID
 try{$processStartedAt=$supervisorProcess.StartTime.ToUniversalTime().ToString('o')}finally{$supervisorProcess.Dispose()}
 try{
@@ -103,6 +104,17 @@ try{
       $visibleHostKey=(@($visible|Sort-Object handle|ForEach-Object{'{0}:{1}:{2}'-f $_.handle,$_.pid,$_.started}) -join '|')
       if($visibleHostKey-ne $lastVisibleHostKey){$nextLaunch=[DateTime]::MinValue;$lastVisibleHostKey=$visibleHostKey}
       $running=Get-WidgetSupervisorRunningGui $info.DataDir $info.AppDir
+      if($running){
+        $record=Get-Content -LiteralPath (Join-Path $info.DataDir 'runtime.json') -Raw -Encoding UTF8|ConvertFrom-Json
+        $presence=$null;try{$presence=Get-Content -LiteralPath (Join-Path $info.DataDir 'presence.json') -Raw -Encoding UTF8|ConvertFrom-Json}catch{}
+        $gui=Get-Process -Id ([int]$record.pid) -ErrorAction Stop
+        try{
+          if($faultPid-ne $gui.Id){$faultPid=$gui.Id;$faultSamples=0}
+          $fault=Get-WidgetResourceFault $gui $presence ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
+          if($fault){$faultSamples++}else{$faultSamples=0}
+          if($faultSamples-ge 3 -and (Stop-WidgetResourceFault $gui $info.AppDir $info.DataDir $fault)){$paused=$true;$running=$false}
+        }finally{$gui.Dispose()}
+      }else{$faultPid=0;$faultSamples=0}
       # Retain the launch handle until startup finishes, so slow WPF startup
       # cannot create another GUI process before runtime.json is available.
       if($pendingGui -and ($running -or $pendingGui.HasExited)){$pendingGui.Dispose();$pendingGui=$null}
