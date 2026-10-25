@@ -8,7 +8,7 @@
 - `runtime/plan.mjs` / `runtime/detect-plan.mjs`：自动识别套餐并检测实际额度窗口；根目录「检测套餐.cmd」可直接运行。
 - `runtime/watch.mjs` / `runtime/worker-state.mjs`：双平台共享的额度刷新与单实例 worker。
 - `runtime/thread-speed.mjs`：Mac 聊天速度面板的本地计数 helper，不代表实时模型速度。
-- `runtime/supervisor.ps1`：识别主窗口并自动恢复角色。
+- `runtime/supervisor.ps1`：识别主窗口并恢复角色；轻度内存超限时自动重新启动 GUI，连续故障或心跳超时则停用。
 - `runtime/host-layer.ps1`：独立窗口的遮挡顺序；主窗口或挂件设置处于前台时临时置顶，切到其他应用后降级，避免跨进程 owner 绑定。
 - `runtime/expressions.ps1` / `assets/expressions/`：23 种表情与手势的选择、图片缓存和透明区域命中检测。
 - `runtime/ui-settings.ps1`：表情手选、定时随机对话开关和语录编辑等设置。
@@ -18,6 +18,8 @@
 - `tests/`：额度解析、刷新队列、Windows 安装与生命周期、表情交互、摸头、低额度对话、定时对话、自适应尺寸，以及本地线程计数测试。
 
 在有可见前台窗口的交互桌面上，`tests\run-windows-tests.ps1 -InteractiveDesktop` 会额外执行前后台层级检查；无桌面的 CI 默认跳过该项。
+
+`tests\resource-recovery.integration.test.ps1` 可单独运行，用独立透明测试窗口与故障注入验证自动恢复两次、第三次停用的完整守护循环。
 
 `installation.json` 在本机安装时生成，不包含在仓库中。Windows 默认个人数据位于 `%LOCALAPPDATA%\GPTNiangUsage\state`，停用后保留。Mac 数据位于 `~/Library/Application Support/GPTNiangUsage`；下载与安装说明见 [Mac README](../macos/README.md)。
 

@@ -53,15 +53,44 @@ function Get-WidgetResourceFault($Process,$Presence,[long]$Now){
   return ''
 }
 
-function Stop-WidgetResourceFault($Process,[string]$AppDir,[string]$DataDir,[string]$Reason){
+function Get-WidgetResourceRecovery($Previous,[string]$Reason,[long]$Now,[long]$PrivateBytes,[bool]$HeartbeatHealthy){
+  $recent=[Collections.Generic.List[long]]::new();$valid=$true
+  foreach($entry in @($Previous.restarts)){
+    if($null-eq $entry){continue}
+    $at=0L
+    if(![long]::TryParse([string]$entry,[ref]$at) -or $at-le 0 -or $at-gt $Now){$valid=$false;break}
+    if($Now-$at-lt 1800000){$recent.Add($at)}
+  }
+  $action='disable'
+  if($valid -and $Reason-eq 'memory-limit' -and $HeartbeatHealthy -and $PrivateBytes-lt 768MB -and $recent.Count-lt 2){
+    $action='restart';$recent.Add($Now)
+  }
+  [pscustomobject]@{action=$action;restarts=@($recent)}
+}
+
+function Stop-WidgetResourceFault($Process,[string]$AppDir,[string]$DataDir,[string]$Reason,$Presence=$null){
   # Recheck the executable and exact widget path before ending any process.
   $target=Get-CimInstance Win32_Process -Filter ('ProcessId='+$Process.Id) -ErrorAction Stop
   if(!$target -or $target.Name-notin @('powershell.exe','pwsh.exe') -or !$target.CommandLine -or !$target.CommandLine.Contains('"'+(Join-Path $AppDir 'widget.ps1')+'"')){return $false}
   if(!$target.CreationDate -or [Math]::Abs(($target.CreationDate.ToUniversalTime()-$Process.StartTime.ToUniversalTime()).TotalMilliseconds)-gt 1){return $false}
-  Write-WidgetSupervisorJson (Join-Path $DataDir 'resource-fault.json') @{pid=$Process.Id;at=[DateTime]::UtcNow.ToString('o');reason=$Reason;privateBytes=$Process.PrivateMemorySize64;action='disabled-until-manual-open'}
-  Disable-WidgetSupervisor -AppDir $AppDir
+  $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();$at=0L
+  $healthy=$Presence -and $Presence.pid-eq $Process.Id -and [long]::TryParse([string]$Presence.at,[ref]$at) -and $now-$at-ge 0 -and $now-$at-le 30000
+  $faultFile=Join-Path $DataDir 'resource-fault.json';$previous=$null
+  if(Test-Path -LiteralPath $faultFile){
+    try{$previous=Get-Content -LiteralPath $faultFile -Raw -Encoding UTF8|ConvertFrom-Json}
+    catch{$previous=@{restarts=@('invalid')}}
+  }
+  $recovery=Get-WidgetResourceRecovery $previous $Reason $now $Process.PrivateMemorySize64 ([bool]$healthy)
+  $action=if($recovery.action-eq 'restart'){'restart-after-cooldown'}else{'disabled-until-manual-open'}
+  try{
+    Write-WidgetSupervisorJson $faultFile @{pid=$Process.Id;at=[DateTime]::UtcNow.ToString('o');reason=$Reason;privateBytes=$Process.PrivateMemorySize64;action=$action;restarts=$recovery.restarts}
+  }catch{
+    # If recovery history cannot be persisted, stop rather than risk a restart loop.
+    $recovery.action='disable'
+  }
+  if($recovery.action-eq 'disable'){try{Disable-WidgetSupervisor -AppDir $AppDir}catch{}}
   Stop-Process -Id $Process.Id -ErrorAction Stop
-  return $true
+  return [pscustomobject]@{stopped=$true;action=$recovery.action}
 }
 
 function Get-WidgetSupervisorInfo {

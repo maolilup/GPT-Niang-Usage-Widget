@@ -112,7 +112,15 @@ try{
           if($faultPid-ne $gui.Id){$faultPid=$gui.Id;$faultSamples=0}
           $fault=Get-WidgetResourceFault $gui $presence ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
           if($fault){$faultSamples++}else{$faultSamples=0}
-          if($faultSamples-ge 3 -and (Stop-WidgetResourceFault $gui $info.AppDir $info.DataDir $fault)){$paused=$true;$running=$false}
+          if($faultSamples-ge 3){
+            $recovery=Stop-WidgetResourceFault $gui $info.AppDir $info.DataDir $fault $presence
+            if($recovery){
+              $running=$false;$faultSamples=0
+              if($recovery.action-eq 'disable'){$paused=$true;break}
+              # Recreate the GUI in this normal user session after a short cooldown.
+              $nextLaunch=[DateTime]::UtcNow.AddSeconds(5)
+            }
+          }
         }finally{$gui.Dispose()}
       }else{$faultPid=0;$faultSamples=0}
       # Retain the launch handle until startup finishes, so slow WPF startup

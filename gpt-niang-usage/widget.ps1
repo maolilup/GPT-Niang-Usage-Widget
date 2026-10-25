@@ -713,9 +713,11 @@ function Tick-Widget {
   try{
   $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   if($now-$script:lastResourceProbe-ge 10000){
-    $process=[Diagnostics.Process]::GetCurrentProcess()
-    try{Write-WidgetJson (Join-Path $script:dataDir 'resource-status.json') @{pid=$PID;at=$now;privateBytes=$process.PrivateMemorySize64;workingSetBytes=$process.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;policy='512px-48MiB-independent-window-v1'}}finally{$process.Dispose()}
+    # Telemetry is best effort: a reader locking this file must not suppress
+    # interaction, stop requests or the independent guardian's heartbeat.
     $script:lastResourceProbe=$now
+    $process=[Diagnostics.Process]::GetCurrentProcess()
+    try{Write-WidgetJson (Join-Path $script:dataDir 'resource-status.json') @{pid=$PID;at=$now;privateBytes=$process.PrivateMemorySize64;workingSetBytes=$process.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;policy='512px-48MiB-independent-window-v1'}}catch [IO.IOException]{}finally{$process.Dispose()}
   }
   Tick-Scene $now
   Update-WidgetExpression $now
