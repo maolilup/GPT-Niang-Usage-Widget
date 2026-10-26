@@ -4,6 +4,7 @@ import {readUsage,atomicJson,resolveCodexExecutable} from './usage.mjs';
 import {createRefreshQueue,mergeUsageSnapshot,readRefreshRequest} from './refresh-queue.mjs';
 import {acquireWorkerLock,processAlive,readJson} from './worker-state.mjs';
 import {readPendingRequests,completeRequests,cleanRefreshResults} from './refresh-client.mjs';
+import {createDiagnosticLog} from './diagnostics.mjs';
 
 const config=readJson(process.argv[2]);
 if(!config?.dataDir || !config?.codexPath)throw new Error('Invalid widget installation configuration');
@@ -11,6 +12,10 @@ const parentPid=Number(process.argv[3]??0);
 if(!Number.isSafeInteger(parentPid) || parentPid<0)throw new Error('Invalid parent process id');
 const lock=await acquireWorkerLock(config.dataDir,parentPid,{onLost:()=>process.exit(1)});
 if(!lock)process.exit(0);
+const log=createDiagnosticLog(config.dataDir);
+log('start',{parentPid},true);
+let exitReason='process-exit',lastSample=0;
+process.on('uncaughtExceptionMonitor',error=>log('fatal',{errorType:error.name,errorCode:error.code,stack:error.stack?.split('\n').filter(line=>/^\s+at\s/.test(line)).join('\n')},true));
 const statusFile=path.join(config.dataDir,'status.json');
 const healthFile=path.join(config.dataDir,'worker-status.json');
 let status=null,requestToken=readRefreshRequest(path.join(config.dataDir,'refresh.flag')),lastActivity=Date.now(),heartbeat;
@@ -18,21 +23,22 @@ const activeRequestIds=new Set();
 const initialStop=readRefreshRequest(path.join(config.dataDir,'stop.flag'));
 const save=data=>{atomicJson(statusFile,data);status=data;};
 const health=()=>atomicJson(healthFile,{...lock.owner,at:Date.now(),busy:refresh.busy,lastRefresh:refresh.lastRefresh});
-function exit() {
+function exit(code) {
+  log('exit',{exitCode:code,reason:exitReason},true);
   clearInterval(heartbeat);
   try{if(readJson(healthFile)?.token===lock.owner.token)fs.unlinkSync(healthFile);}catch{}
   try{lock.release();}catch{}
 }
 process.on('exit',exit);
-process.on('SIGTERM',()=>process.exit(0));
-process.on('SIGINT',()=>process.exit(0));
-if(parentPid && !processAlive(parentPid))process.exit(0);
+process.on('SIGTERM',()=>{exitReason='SIGTERM';process.exit(0);});
+process.on('SIGINT',()=>{exitReason='SIGINT';process.exit(0);});
+if(parentPid && !processAlive(parentPid)){exitReason='parent-gone';process.exit(0);}
 const refresh=createRefreshQueue(async()=>{
   lastActivity=Date.now();
   const batch=readPendingRequests(config.dataDir);
   for(const request of batch)activeRequestIds.add(request.id);
   try {
-    const next=await readUsage(resolveCodexExecutable(config.codexPath),{onAccount:accountKey=>{
+    const next=await readUsage(resolveCodexExecutable(config.codexPath),{log,onAccount:accountKey=>{
       if(status?.accountKey!==accountKey || !accountKey)save({ok:false,queryOk:false,accountKey,error:'正在读取当前账户额度…',windows:[],checkedAt:Date.now()});
     }});
     save(mergeUsageSnapshot(status,next));
@@ -42,6 +48,7 @@ const refresh=createRefreshQueue(async()=>{
 },{onError:error=>{
   // A temporary filesystem failure must not stop the quota worker.
   const code=typeof error?.code==='string'?error.code:'IO';
+  log('snapshot-error',{errorCode:code,errorType:error?.name});
   console.error('Quota snapshot could not be saved; next refresh will retry ('+code+').');
 }});
 
@@ -51,7 +58,7 @@ health();
 if(parentPid)void refresh.request();
 heartbeat=setInterval(()=>{
   const stop=readRefreshRequest(path.join(config.dataDir,'stop.flag'));
-  if((parentPid && (!processAlive(parentPid) || stop!==null)) || (stop!==null && stop!==initialStop))process.exit(0);
+  if((parentPid && (!processAlive(parentPid) || stop!==null)) || (stop!==null && stop!==initialStop)){exitReason=stop!==null?'stop-flag':'parent-gone';process.exit(0);}
   // No background queries while Codex is not visible; a fresh query on return.
   const now=Date.now(),presence=readJson(path.join(config.dataDir,'presence.json'));
   const active=presence?.visible && now-presence.at>=0 && now-presence.at<5000 && processAlive(presence.pid);
@@ -62,7 +69,8 @@ heartbeat=setInterval(()=>{
   const pending=readPendingRequests(config.dataDir,now);
   if(requested)void refresh.request();
   else if(pending.some(request=>!activeRequestIds.has(request.id)) || (active && !refresh.busy && now-refresh.lastRefresh>=60000))void refresh.request();
-  if(!parentPid && !active && !refresh.busy && pending.length===0 && now-lastActivity>=30000)process.exit(0);
+  if(!parentPid && !active && !refresh.busy && pending.length===0 && now-lastActivity>=30000){exitReason='headless-idle';process.exit(0);}
+  if(now-lastSample>=10000){lastSample=now;const memory=process.memoryUsage();log('sample',{workingSetBytes:memory.rss,managedBytes:memory.heapUsed,busy:refresh.busy,pending:pending.length,visible:!!active});}
   cleanRefreshResults(config.dataDir,now);
   try{health();}catch{}
 },1000);

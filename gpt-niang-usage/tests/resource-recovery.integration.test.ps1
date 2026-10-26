@@ -4,7 +4,7 @@ $source=Split-Path $TestRoot -Parent
 $fixture=Join-Path (Split-Path $source -Parent) ('test-temp\resource-recovery-loop-'+[guid]::NewGuid().ToString('N'))
 $app=Join-Path $fixture 'app';$data=Join-Path $fixture 'state';$runtime=Join-Path $app 'runtime'
 $null=[IO.Directory]::CreateDirectory($runtime);$null=[IO.Directory]::CreateDirectory($data)
-foreach($name in @('supervisor-task.ps1','start-widget.ps1')){Copy-Item -LiteralPath (Join-Path $source ('runtime\'+$name)) -Destination (Join-Path $runtime $name)}
+foreach($name in @('supervisor-task.ps1','start-widget.ps1','diagnostics.ps1')){Copy-Item -LiteralPath (Join-Path $source ('runtime\'+$name)) -Destination (Join-Path $runtime $name)}
 $guardian=[IO.File]::ReadAllText((Join-Path $source 'runtime\supervisor.ps1'),[Text.Encoding]::UTF8)
 $hostQuery='$hosts=@([GptWidgetSupervisorNative]::Hosts())'
 if(!$guardian.Contains($hostQuery)){throw 'Supervisor fixture host injection point changed.'}

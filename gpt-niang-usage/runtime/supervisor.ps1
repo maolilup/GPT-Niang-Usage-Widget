@@ -1,6 +1,7 @@
 param([switch]$CheckOnly)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'supervisor-task.ps1')
+. (Join-Path $PSScriptRoot 'diagnostics.ps1')
 $appDir=Split-Path $PSScriptRoot -Parent
 $info=Get-WidgetSupervisorInfo $appDir
 if(!('GptWidgetSupervisorNative' -as [type])){
@@ -84,6 +85,9 @@ $mutex=[Threading.Mutex]::new($false,('Local\GPTNiangSupervisor-'+$info.Sid))
 $owned=$false
 try{$owned=$mutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$owned=$true}
 if(!$owned){$mutex.Dispose();exit 0}
+$supervisorLog=New-WidgetDiagnosticLog $info.DataDir 'supervisor'
+Write-WidgetDiagnostic $supervisorLog 'start' @{} -Force
+$exitReason='loop-ended';$lastDiagnostic=0L;$lastHostKey='';$lastRunning=$null
 $pauseFile=Join-Path $info.DataDir 'supervisor-pause.json'
 $nextLaunch=[DateTime]::MinValue
 $nextStatus=[DateTime]::MinValue
@@ -94,9 +98,14 @@ $supervisorProcess=Get-Process -Id $PID
 try{$processStartedAt=$supervisorProcess.StartTime.ToUniversalTime().ToString('o')}finally{$supervisorProcess.Dispose()}
 try{
   while($true){
-    if((Test-Path -LiteralPath (Join-Path $info.DataDir 'supervisor-disabled.flag')) -or (Test-Path -LiteralPath (Join-Path $info.DataDir 'supervisor-stop.flag'))){break}
+    if((Test-Path -LiteralPath (Join-Path $info.DataDir 'supervisor-disabled.flag')) -or (Test-Path -LiteralPath (Join-Path $info.DataDir 'supervisor-stop.flag'))){$exitReason='stop-or-disabled-flag';break}
     try{
       $hosts=@([GptWidgetSupervisorNative]::Hosts())
+      $hostKey=(@($hosts|Sort-Object handle|ForEach-Object{'{0}:{1}:{2}:{3}'-f $_.handle,$_.pid,$_.started,$_.visible})-join '|')
+      if($hostKey-ne $lastHostKey){
+        $lastHostKey=$hostKey;Write-WidgetDiagnostic $supervisorLog 'host-set' @{count=$hosts.Count} -Force
+        foreach($item in $hosts){Write-WidgetDiagnostic $supervisorLog 'host-window' @{host=$item.handle;hostPid=$item.pid;visible=$item.visible;processStartedAt=([DateTime]::new($item.started,[DateTimeKind]::Utc).ToString('o'))} -Force}
+      }
       $pause=$null;try{$pause=Get-Content -LiteralPath $pauseFile -Raw -Encoding UTF8|ConvertFrom-Json}catch{}
       $paused=Test-WidgetSupervisorPause $pause $hosts
       if($pause -and !$paused){Remove-Item -LiteralPath $pauseFile -ErrorAction SilentlyContinue}
@@ -104,6 +113,7 @@ try{
       $visibleHostKey=(@($visible|Sort-Object handle|ForEach-Object{'{0}:{1}:{2}'-f $_.handle,$_.pid,$_.started}) -join '|')
       if($visibleHostKey-ne $lastVisibleHostKey){$nextLaunch=[DateTime]::MinValue;$lastVisibleHostKey=$visibleHostKey}
       $running=Get-WidgetSupervisorRunningGui $info.DataDir $info.AppDir
+      if($running-ne $lastRunning){$lastRunning=$running;Write-WidgetDiagnostic $supervisorLog 'gui-state' @{state=$(if($running){'running'}else{'absent'})} -Force}
       if($running){
         $record=Get-Content -LiteralPath (Join-Path $info.DataDir 'runtime.json') -Raw -Encoding UTF8|ConvertFrom-Json
         $presence=$null;try{$presence=Get-Content -LiteralPath (Join-Path $info.DataDir 'presence.json') -Raw -Encoding UTF8|ConvertFrom-Json}catch{}
@@ -112,11 +122,17 @@ try{
           if($faultPid-ne $gui.Id){$faultPid=$gui.Id;$faultSamples=0}
           $fault=Get-WidgetResourceFault $gui $presence ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
           if($fault){$faultSamples++}else{$faultSamples=0}
+          if($fault -or [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()-$lastDiagnostic-ge 10000){
+            $lastDiagnostic=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+            Write-WidgetDiagnostic $supervisorLog 'gui-sample' @{childPid=$gui.Id;privateBytes=$gui.PrivateMemorySize64;workingSetBytes=$gui.WorkingSet64;handles=$gui.HandleCount;heartbeatAgeMs=$(if($presence){$lastDiagnostic-[long]$presence.at}else{-1});faultSamples=$faultSamples;reason=[string]$fault} -Force
+          }
           if($faultSamples-ge 3){
+            Write-WidgetDiagnostic $supervisorLog 'fault-decision' @{childPid=$gui.Id;reason=$fault;privateBytes=$gui.PrivateMemorySize64;heartbeatAgeMs=$(if($presence){[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()-[long]$presence.at}else{-1})} -Force
             $recovery=Stop-WidgetResourceFault $gui $info.AppDir $info.DataDir $fault $presence
             if($recovery){
+              Write-WidgetDiagnostic $supervisorLog 'fault-action' @{childPid=$gui.Id;reason=$fault;action=$recovery.action} -Force
               $running=$false;$faultSamples=0
-              if($recovery.action-eq 'disable'){$paused=$true;break}
+              if($recovery.action-eq 'disable'){$paused=$true;$exitReason='resource-disabled';break}
               # Recreate the GUI in this normal user session after a short cooldown.
               $nextLaunch=[DateTime]::UtcNow.AddSeconds(5)
             }
@@ -125,20 +141,26 @@ try{
       }else{$faultPid=0;$faultSamples=0}
       # Retain the launch handle until startup finishes, so slow WPF startup
       # cannot create another GUI process before runtime.json is available.
-      if($pendingGui -and ($running -or $pendingGui.HasExited)){$pendingGui.Dispose();$pendingGui=$null}
+      if($pendingGui -and ($running -or $pendingGui.HasExited)){
+        if($pendingGui.HasExited){Write-WidgetDiagnostic $supervisorLog 'launch-exit' @{childPid=$pendingGui.Id;exitCode=$pendingGui.ExitCode} -Force}
+        $pendingGui.Dispose();$pendingGui=$null
+      }
       if(!$paused -and $visible.Count-gt 0 -and !$running -and !$pendingGui -and [DateTime]::UtcNow-ge $nextLaunch){
         $nextLaunch=[DateTime]::UtcNow.AddSeconds(10)
         $powerShell=Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
         $pendingGui=Start-Process -FilePath $powerShell -ArgumentList @('-NoLogo','-NoProfile','-STA','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',('"'+(Join-Path $info.AppDir 'runtime\start-widget.ps1')+'"'),'-WidgetPath',('"'+(Join-Path $info.AppDir 'widget.ps1')+'"')) -WindowStyle Hidden -PassThru
+        Write-WidgetDiagnostic $supervisorLog 'gui-launch' @{childPid=$pendingGui.Id} -Force
       }
       if([DateTime]::UtcNow-ge $nextStatus){
         Write-WidgetSupervisorJson (Join-Path $info.DataDir 'supervisor-status.json') @{pid=$PID;processStartedAt=$processStartedAt;at=[DateTime]::UtcNow.ToString('o');mainWindows=$hosts.Count;visibleWindows=$visible.Count;paused=$paused;widgetRunning=$running;taskName=$info.TaskName}
         $nextStatus=[DateTime]::UtcNow.AddSeconds(5)
       }
-    }catch{try{[IO.File]::WriteAllText((Join-Path $info.DataDir 'supervisor-error.txt'),$_.Exception.Message)}catch{}}
+    }catch{Write-WidgetDiagnosticError $supervisorLog 'loop-error' $_ 'supervisor-loop';try{[IO.File]::WriteAllText((Join-Path $info.DataDir 'supervisor-error.txt'),$_.Exception.Message)}catch{}}
     Start-Sleep -Milliseconds 1500
   }
 }finally{
+  Write-WidgetDiagnostic $supervisorLog 'exit' @{reason=$exitReason} -Force
+  Close-WidgetDiagnosticLog $supervisorLog
   if($pendingGui){$pendingGui.Dispose()}
   try{
     $statusFile=Join-Path $info.DataDir 'supervisor-status.json'

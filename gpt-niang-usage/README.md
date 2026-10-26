@@ -9,6 +9,7 @@
 - `runtime/watch.mjs` / `runtime/worker-state.mjs`：双平台共享的额度刷新与单实例 worker。
 - `runtime/thread-speed.mjs`：Mac 聊天速度面板的本地计数 helper，不代表实时模型速度。
 - `runtime/supervisor.ps1`：识别主窗口并恢复角色；轻度内存超限时自动重新启动 GUI，连续故障或心跳超时则停用。
+- `runtime/diagnostics.ps1` / `runtime/diagnostics.mjs`：按组件限量轮转的故障事件日志；`记录故障日志.cmd` 启动独立观察器，`停止故障记录.cmd` 提前结束。默认记录一小时，入口不会启用挂件或插件。
 - `runtime/host-layer.ps1`：独立窗口的遮挡顺序；主窗口或挂件设置处于前台时临时置顶，切到其他应用后降级，避免跨进程 owner 绑定。
 - `runtime/expressions.ps1` / `assets/expressions/`：23 种表情与手势的选择、图片缓存和透明区域命中检测。
 - `runtime/ui-settings.ps1`：表情手选、定时随机对话开关和语录编辑等设置。

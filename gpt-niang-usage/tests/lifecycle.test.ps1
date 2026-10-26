@@ -19,6 +19,7 @@ function Wait-TestWorker([int]$ExpectedPid){
 
 # Load only lifecycle functions; never create the real WPF UI or read its config.
 $widgetFile=Join-Path (Split-Path $TestRoot -Parent) 'widget.ps1'
+. (Join-Path (Split-Path $TestRoot -Parent) 'runtime\diagnostics.ps1')
 $source=[IO.File]::ReadAllText($widgetFile,[Text.Encoding]::UTF8)
 $tokens=$null;$parseErrors=$null
 $ast=[Management.Automation.Language.Parser]::ParseInput($source,[ref]$tokens,[ref]$parseErrors)

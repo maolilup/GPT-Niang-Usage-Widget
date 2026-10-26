@@ -28,6 +28,7 @@ Thumbs.db
 **/gui.lock
 **/worker-ownership.lock
 **/worker.log
+**/logs/*.jsonl
 
 # Personal live dialogue configuration belongs in the user data directory.
 dialogue.json

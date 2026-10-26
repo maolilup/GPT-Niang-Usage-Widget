@@ -6,6 +6,9 @@ if(!(Test-Path -LiteralPath $script:configPath)){throw 'Please run Install.ps1 f
 $script:config=Get-Content -LiteralPath $script:configPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $script:dataDir=$script:config.dataDir
 $null=New-Item -ItemType Directory -Path $script:dataDir -Force
+. (Join-Path $script:appDir 'runtime\diagnostics.ps1')
+$script:diagnosticLog=$null;$script:diagnosticStage='initialization';$script:diagnosticStateKey='';$script:diagnosticExitReason='dispatcher-returned'
+if(!$CheckOnly -and !$Preview){$script:diagnosticLog=New-WidgetDiagnosticLog $script:dataDir 'widget';Write-WidgetDiagnostic $script:diagnosticLog 'start' @{} -Force}
 . (Join-Path $script:appDir 'runtime\quotes.ps1')
 . (Join-Path $script:appDir 'runtime\ui-settings.ps1')
 . (Join-Path $script:appDir 'runtime\audio.ps1')
@@ -92,6 +95,7 @@ public sealed class GptBezierEase:EasingFunctionBase {
 '@ -ReferencedAssemblies ([Windows.Media.Animation.EasingFunctionBase].Assembly.Location),([Windows.Freezable].Assembly.Location)
 try{[GptWidgetNative]::SetProcessDpiAwarenessContext([IntPtr](-4)) | Out-Null}catch{}
 $script:window=[Windows.Markup.XamlReader]::Parse((Get-Content -LiteralPath (Join-Path $script:appDir 'widget.xaml') -Raw -Encoding UTF8))
+$script:window.Dispatcher.add_UnhandledException({param($sender,$event)Write-WidgetDiagnosticError $script:diagnosticLog 'dispatcher-error' $event.Exception $script:diagnosticStage})
 # Capture the unscaled XAML canvas before native resizing changes Window.Width/Height.
 $script:designWidth=[double]$script:window.FindName('AnimationStage').Width
 $script:designHeight=[double]$script:window.FindName('AnimationStage').Height
@@ -682,6 +686,7 @@ function Ensure-QuotaWorker([long]$now){
     try{
       if(!$script:worker.HasExited){
         if($now-$script:lastWorkerStart-lt 10000){return}
+        Write-WidgetDiagnostic $script:diagnosticLog 'worker-stop' @{childPid=$script:worker.Id;reason='stale-health'} -Force
         $script:worker.Kill()
         if(!$script:worker.WaitForExit(1000)){return}
       }
@@ -691,11 +696,12 @@ function Ensure-QuotaWorker([long]$now){
   if($now-$script:lastWorkerStart-lt 5000){return}
   $script:lastWorkerStart=$now
   $workerArgs=@(('"'+(Join-Path $script:appDir 'runtime\watch.mjs')+'"'),('"'+$script:configPath+'"'),[string]$PID)
-  try{$script:worker=Start-Process -FilePath $script:config.nodePath -ArgumentList $workerArgs -WindowStyle Hidden -PassThru}
-  catch{[IO.File]::WriteAllText((Join-Path $script:dataDir 'worker-error.txt'),$_.Exception.Message,[Text.UTF8Encoding]::new($false))}
+  try{$script:worker=Start-Process -FilePath $script:config.nodePath -ArgumentList $workerArgs -WindowStyle Hidden -PassThru;Write-WidgetDiagnostic $script:diagnosticLog 'worker-start' @{childPid=$script:worker.Id} -Force}
+  catch{Write-WidgetDiagnosticError $script:diagnosticLog 'worker-error' $_ 'worker-start';[IO.File]::WriteAllText((Join-Path $script:dataDir 'worker-error.txt'),$_.Exception.Message,[Text.UTF8Encoding]::new($false))}
 }
 function Stop-WidgetRuntime {
   if($script:runtimeClosed){return};$script:runtimeClosed=$true
+  Write-WidgetDiagnostic $script:diagnosticLog 'shutdown' @{reason=$script:diagnosticExitReason;stage=$script:diagnosticStage} -Force
   try{if($script:hostFollower){$script:hostFollower.Dispose()}}catch{}
   foreach($timer in @($script:timer,$script:hostEventTimer,$script:menuTimer,$script:sceneTimer,$script:resetPhaseTimer,$script:closeTimer)){try{if($timer){$timer.Stop()}}catch{}}
   try{Stop-WidgetAudio}catch{}
@@ -706,10 +712,12 @@ function Stop-WidgetRuntime {
     try{$state=Get-Content -LiteralPath $file -Raw -Encoding UTF8 | ConvertFrom-Json;if($state.pid-eq $PID){Remove-Item -LiteralPath $file -ErrorAction SilentlyContinue}}catch{}
   }
   try{if($script:mutexOwned){$script:mutex.ReleaseMutex();$script:mutexOwned=$false}}catch{};try{$script:mutex.Dispose()}catch{}
+  Close-WidgetDiagnosticLog $script:diagnosticLog
 }
 function Tick-Widget {
   if($script:updating){return}
   $script:updating=$true
+  $tickClock=[Diagnostics.Stopwatch]::StartNew();$script:diagnosticStage='resource'
   try{
   $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   if($now-$script:lastResourceProbe-ge 10000){
@@ -719,10 +727,13 @@ function Tick-Widget {
     $process=[Diagnostics.Process]::GetCurrentProcess()
     try{Write-WidgetJson (Join-Path $script:dataDir 'resource-status.json') @{pid=$PID;at=$now;privateBytes=$process.PrivateMemorySize64;workingSetBytes=$process.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;policy='512px-48MiB-independent-window-v1'}}catch [IO.IOException]{}finally{$process.Dispose()}
   }
+  $script:diagnosticStage='scene'
   Tick-Scene $now
   Update-WidgetExpression $now
-  if($now-$script:lastPresence-ge 1000 -and (Test-Path -LiteralPath (Join-Path $script:dataDir 'stop.flag'))){$script:window.Close();return}
+  if($now-$script:lastPresence-ge 1000 -and (Test-Path -LiteralPath (Join-Path $script:dataDir 'stop.flag'))){$script:diagnosticExitReason='stop-flag';$script:window.Close();return}
+  $script:diagnosticStage='quota-worker'
   Ensure-QuotaWorker $now
+  $script:diagnosticStage='host-discovery'
   $foreground=[GptWidgetNative]::GetAncestor([GptWidgetNative]::GetForegroundWindow(),2)
   if($foreground-ne $script:lastForeground -or ($script:hostHandle-ne [IntPtr]::Zero -and ![GptWidgetNative]::IsWindow($script:hostHandle))){
     $script:lastForeground=$foreground
@@ -742,6 +753,7 @@ function Tick-Widget {
   }
   $visible=$layout -and $layout.visible -and [GptWidgetZOrderNative]::VisibleSurface($script:hostHandle) -and ![GptWidgetNative]::IsIconic($script:hostHandle)
   if($visible){
+    $script:diagnosticStage='window-position'
     if($script:attachedHost-ne $script:hostHandle){
       $script:attachedHost=$script:hostHandle;$script:lastPosition=$null
     }
@@ -765,6 +777,7 @@ function Tick-Widget {
       $script:hostFollower.Configure($script:hostHandle,$frame.Left,$frame.Top,$frame.Right,$frame.Bottom,$w,$h,[int]($script:offsetLeft*$dpi),[int]($script:offsetRight*$dpi),[int]($script:offsetBottom*$dpi),$script:anchor,$true)
     }
     $layer=Set-WidgetAboveHost $script:widgetHandle $script:hostHandle
+    if(!$layer.ok){Write-WidgetDiagnostic $script:diagnosticLog 'layer-failed' @{reason=$layer.reason;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64()}}
   }elseif($script:window.IsVisible){
     $script:hostFollower.Suspend()
     $script:context.IsOpen=$false
@@ -772,7 +785,13 @@ function Tick-Widget {
     [GptWidgetNative]::SetWindowPos($script:widgetHandle,[IntPtr](-2),0,0,0,0,0x4413)|Out-Null
     $script:window.Hide()
   }
+  $stateKey='{0}:{1}:{2}:{3}:{4}'-f $script:hostHandle.ToInt64(),[bool]$visible,$script:adaptiveHidden,[GptWidgetZOrderNative]::Topmost($script:widgetHandle),$script:lastForeground.ToInt64()
+  if($stateKey-ne $script:diagnosticStateKey){
+    $script:diagnosticStateKey=$stateKey
+    Write-WidgetDiagnostic $script:diagnosticLog 'window-state' @{host=$script:hostHandle.ToInt64();hostPid=[GptWidgetNative]::ProcessId($script:hostHandle);widget=$script:widgetHandle.ToInt64();visible=[bool]$visible;state=$(if($script:adaptiveHidden){'adaptive-hidden'}elseif(!$visible){'host-unavailable'}else{'visible'});foreground=$script:lastForeground.ToInt64();owner=[GptWidgetNative]::GetWindowLongPtr($script:widgetHandle,-8).ToInt64();topmost=[GptWidgetZOrderNative]::Topmost($script:widgetHandle);displayScale=$script:displayScale} -Force
+  }
   if($now-$script:lastPresence-ge 1000){
+    $script:diagnosticStage='presence'
     Sync-WidgetDialogueConfiguration $now
     Update-Quota
     Read-DisplayRequest
@@ -782,7 +801,13 @@ function Tick-Widget {
     Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};ambientDialogue=@{enabled=$script:autoDialogueEnabled;paused=$script:ambientQuoteState.blocked;nextAt=$script:ambientQuoteState.nextAt;count=$script:ambientQuoteState.count;lastShownAt=$script:ambientQuoteState.lastShownAt};dialogueConfig=@{path=$script:widgetDialogueState.path;reloads=$script:widgetDialogueState.reloads;loadedAt=$script:widgetDialogueState.loadedAt;error=$script:widgetDialogueState.error};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;origin=$script:sceneOrigin;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
     $script:lastPresence=$now
   }
-  }finally{$script:updating=$false}
+  }finally{
+    if($script:diagnosticLog -and ($now-$script:lastDiagnosticSample-ge 10000 -or $tickClock.ElapsedMilliseconds-ge 1000)){
+      $script:lastDiagnosticSample=$now;$sampleProcess=[Diagnostics.Process]::GetCurrentProcess()
+      try{Write-WidgetDiagnostic $script:diagnosticLog 'sample' @{privateBytes=$sampleProcess.PrivateMemorySize64;workingSetBytes=$sampleProcess.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);handles=$sampleProcess.HandleCount;cpuMs=[long]$sampleProcess.TotalProcessorTime.TotalMilliseconds;tickMs=$tickClock.ElapsedMilliseconds;stage=$script:diagnosticStage;heartbeatAgeMs=($now-$script:lastPresence);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;followEvents=$script:hostFollower.MovementEvents;positionChanges=$script:hostFollower.PositionChanges}}catch{}finally{$sampleProcess.Dispose()}
+    }
+    $script:updating=$false
+  }
 }
 $script:winEventCallback=[GptWidgetNative+WinEventProc]{param($hook,$ev,$hwnd,$objectId,$childId,$threadId,$time)
   if($hwnd-eq $script:hostHandle -and $objectId-eq 0 -and $childId-eq 0){
@@ -796,7 +821,7 @@ $script:winEventCallback=[GptWidgetNative+WinEventProc]{param($hook,$ev,$hwnd,$o
 }
 $script:hostEventTimer=New-Object Windows.Threading.DispatcherTimer
 $script:hostEventTimer.Interval=[TimeSpan]::FromMilliseconds(33)
-$script:hostEventTimer.Add_Tick({$script:hostEventTimer.Stop();try{Tick-Widget}catch{[IO.File]::WriteAllText((Join-Path $script:dataDir 'display-error.txt'),$_.Exception.Message,[Text.UTF8Encoding]::new($false))}})
+$script:hostEventTimer.Add_Tick({$script:hostEventTimer.Stop();try{Tick-Widget}catch{Write-WidgetDiagnosticError $script:diagnosticLog 'tick-error' $_ $script:diagnosticStage;[IO.File]::WriteAllText((Join-Path $script:dataDir 'display-error.txt'),$_.Exception.Message,[Text.UTF8Encoding]::new($false))}})
 $script:eventHooks=@(
   [GptWidgetNative]::Hook(3,3,$script:winEventCallback),
   [GptWidgetNative]::Hook(16,23,$script:winEventCallback),
@@ -804,7 +829,7 @@ $script:eventHooks=@(
 )
 $script:timer=New-Object Windows.Threading.DispatcherTimer
 $script:timer.Interval=[TimeSpan]::FromMilliseconds(1000)
-$script:timer.Add_Tick({try{Tick-Widget}catch{[IO.File]::WriteAllText((Join-Path $script:dataDir 'display-error.txt'),$_.Exception.Message)}})
+$script:timer.Add_Tick({try{Tick-Widget}catch{Write-WidgetDiagnosticError $script:diagnosticLog 'tick-error' $_ $script:diagnosticStage;[IO.File]::WriteAllText((Join-Path $script:dataDir 'display-error.txt'),$_.Exception.Message)}})
 $script:window.Add_Closed({
   Stop-WidgetRuntime
   [Windows.Threading.Dispatcher]::CurrentDispatcher.InvokeShutdown()
@@ -818,6 +843,7 @@ try{
   $script:timer.Start();Tick-Widget
   [Windows.Threading.Dispatcher]::Run()
 }catch{
+  Write-WidgetDiagnosticError $script:diagnosticLog 'fatal' $_ $script:diagnosticStage
   [IO.File]::WriteAllText((Join-Path $script:dataDir 'display-error.txt'),$_.Exception.ToString())
   throw
 }finally{Stop-WidgetRuntime}

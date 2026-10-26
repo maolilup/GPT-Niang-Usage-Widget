@@ -154,13 +154,14 @@ test('worker ownership recovers after a force-killed worker leaves stale files',
     const configPath=path.join(dir,'installation.json');
     atomicJson(configPath,{dataDir:dir,codexPath:path.join(dir,'missing-codex.exe')});
     const start=()=>{
-      const child=spawn(process.execPath,[worker,configPath,String(process.pid)],{env:isolatedWorkerEnv(dir),windowsHide:true,stdio:'ignore'});
+      const child=spawn(process.execPath,[worker,configPath,String(process.pid)],{env:isolatedWorkerEnv(dir),windowsHide:true,stdio:['ignore','ignore','pipe']});
+      child.diagnosticStderr='';child.stderr.on('data',data=>{child.diagnosticStderr=(child.diagnosticStderr+data).slice(-4096);});
       children.push(child);return child;
     };
     const waitForOwner=async child=>{
       const deadline=Date.now()+4000;
       while(healthyWorker(dir)?.pid!==child.pid && Date.now()<deadline)await pause(20);
-      assert.equal(healthyWorker(dir)?.pid,child.pid);
+      assert.equal(healthyWorker(dir)?.pid,child.pid,`worker exit=${child.exitCode} signal=${child.signalCode}: ${child.diagnosticStderr}`);
       return readJson(path.join(dir,'worker.lock')).token;
     };
     const first=start(),firstToken=await waitForOwner(first);

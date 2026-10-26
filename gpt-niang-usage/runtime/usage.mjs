@@ -77,28 +77,34 @@ export function resolveCodexExecutable(configuredPath,{env=process.env,platform=
 }
 
 // Only three read-only protocol methods are sent. There is no thread or model call.
-export function readUsage(cli, {timeoutMs=18000,spawnProcess=spawn,onAccount=()=>{}}={}) {
+export function readUsage(cli, {timeoutMs=18000,spawnProcess=spawn,onAccount=()=>{},log=()=>{}}={}) {
+  const started=performance.now(),queryId=randomUUID();
+  const trace=(event,data={})=>{try{log(event,{queryId,...data},true);}catch{}};
+  trace('query-start');
   return new Promise(resolve=>{
     let finished=false,proc,lines,accountKey=null,account=null,planInfo=identifyPlan(null,null),expectedId=1;
     const failure=(error,errorCode)=>({ok:false,queryOk:false,error,windows:[],...planInfo,accountKey,clearPrevious:!accountKey,...(errorCode?{errorCode}:{})});
-    const stopChild=()=>{try{proc?.stdin.end();proc?.kill();}catch{}};
+    let stopRequested=false;
+    const stopChild=()=>{if(stopRequested)return;stopRequested=true;trace('child-stop',{childPid:proc?.pid,reason:'query-cleanup'});try{proc?.stdin.end();proc?.kill();}catch{}};
     const finish=data=>{
       if(finished)return; finished=true; clearTimeout(timer);
       lines?.close();
       process.removeListener('exit',stopChild);
+      trace('query-finish',{ok:data.ok,queryOk:data.queryOk,errorCode:data.errorCode,elapsedMs:Math.round(performance.now()-started)});
       stopChild();
       resolve(data);
     };
-    const timer=setTimeout(()=>finish(failure('查询超时，稍后重试')),timeoutMs);
+    const timer=setTimeout(()=>{trace('query-timeout',{stage:String(expectedId)});finish(failure('查询超时，稍后重试'));},timeoutMs);
     try{proc=spawnProcess(cli,['app-server','--stdio'],{windowsHide:true,stdio:['pipe','pipe','pipe']});}
-    catch{finish(failure('Codex 额度服务暂不可用'));return;}
+    catch(error){trace('child-error',{errorCode:error.code,errorType:error.name});finish(failure('Codex 额度服务暂不可用'));return;}
+    trace('child-start',{childPid:proc.pid});
     process.once('exit',stopChild);
     proc.stderr.on('data',()=>{}).on('error',()=>{});
-    proc.on('error',error=>finish(failure(error.code==='ENOENT'?'未找到 Codex 程序，请检查客户端安装':'无法启动 Codex 额度服务',error.code)));
-    proc.on('close',()=>finish(failure('Codex 额度服务已结束')));
+    proc.on('error',error=>{trace('child-error',{childPid:proc.pid,errorCode:error.code,errorType:error.name});finish(failure(error.code==='ENOENT'?'未找到 Codex 程序，请检查客户端安装':'无法启动 Codex 额度服务',error.code));});
+    proc.on('close',(exitCode,signal)=>{trace('child-exit',{childPid:proc.pid,exitCode,signal,reason:stopRequested?'cleanup-requested':'unexpected'});finish(failure('Codex 额度服务已结束'));});
     proc.stdout.on('error',()=>finish(failure('Codex 额度连接已结束')));
     proc.stdin.on('error',()=>finish(failure('Codex 额度连接已结束')));
-    const send=data=>{try{proc.stdin.write(JSON.stringify(data)+'\n');}catch{finish(failure('额度连接不可用'));}};
+    const send=data=>{trace('rpc-send',{method:data.method,requestId:data.id});try{proc.stdin.write(JSON.stringify(data)+'\n');}catch{finish(failure('额度连接不可用'));}};
     lines=readline.createInterface({input:proc.stdout});
     lines.on('line',line=>{
       if(finished)return;
@@ -106,6 +112,7 @@ export function readUsage(cli, {timeoutMs=18000,spawnProcess=spawn,onAccount=()=
       let m;try{m=JSON.parse(line);}catch{return;}
       if(!m || typeof m!=='object' || Array.isArray(m))return;
       if(m.id!==expectedId)return;
+      trace('rpc-reply',{requestId:m.id,ok:!m.error});
       if(m.id===1){
         if(m.error)return finish(failure('Codex 额度接口未就绪'));
         expectedId=null;
