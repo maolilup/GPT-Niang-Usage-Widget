@@ -93,7 +93,7 @@ $nextLaunch=[DateTime]::MinValue
 $nextStatus=[DateTime]::MinValue
 $lastVisibleHostKey=''
 $pendingGui=$null
-$faultPid=0;$faultSamples=0
+$faultPid=0;$faultSamples=0;$heartbeatState=@{}
 $supervisorProcess=Get-Process -Id $PID
 try{$processStartedAt=$supervisorProcess.StartTime.ToUniversalTime().ToString('o')}finally{$supervisorProcess.Dispose()}
 try{
@@ -116,25 +116,30 @@ try{
       if($running-ne $lastRunning){$lastRunning=$running;Write-WidgetDiagnostic $supervisorLog 'gui-state' @{state=$(if($running){'running'}else{'absent'})} -Force}
       if($running){
         $record=Get-Content -LiteralPath (Join-Path $info.DataDir 'runtime.json') -Raw -Encoding UTF8|ConvertFrom-Json
-        $presence=$null;try{$presence=Get-Content -LiteralPath (Join-Path $info.DataDir 'presence.json') -Raw -Encoding UTF8|ConvertFrom-Json}catch{}
+        $presence=Read-WidgetSupervisorPresence $info.DataDir
         $gui=Get-Process -Id ([int]$record.pid) -ErrorAction Stop
         try{
           if($faultPid-ne $gui.Id){$faultPid=$gui.Id;$faultSamples=0}
-          $fault=Get-WidgetResourceFault $gui $presence ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
+          $fault=Get-WidgetResourceFault $gui $presence ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) $heartbeatState
+          $effectivePresence=$heartbeatState.last
+          if(!$presence){Write-WidgetDiagnostic $supervisorLog 'heartbeat-unavailable' @{childPid=$gui.Id;state=$(if($effectivePresence){'cached'}else{'missing'});heartbeatAgeMs=$(if($effectivePresence){[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()-[long]$effectivePresence.at}else{-1})}}
           if($fault){$faultSamples++}else{$faultSamples=0}
           if($fault -or [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()-$lastDiagnostic-ge 10000){
             $lastDiagnostic=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-            Write-WidgetDiagnostic $supervisorLog 'gui-sample' @{childPid=$gui.Id;privateBytes=$gui.PrivateMemorySize64;workingSetBytes=$gui.WorkingSet64;handles=$gui.HandleCount;heartbeatAgeMs=$(if($presence){$lastDiagnostic-[long]$presence.at}else{-1});faultSamples=$faultSamples;reason=[string]$fault} -Force
+            Write-WidgetDiagnostic $supervisorLog 'gui-sample' @{childPid=$gui.Id;privateBytes=$gui.PrivateMemorySize64;workingSetBytes=$gui.WorkingSet64;handles=$gui.HandleCount;heartbeatAgeMs=$(if($effectivePresence){$lastDiagnostic-[long]$effectivePresence.at}else{-1});state=$(if($presence){'file'}else{'cached'});faultSamples=$faultSamples;reason=[string]$fault} -Force
           }
           if($faultSamples-ge 3){
             Write-WidgetDiagnostic $supervisorLog 'fault-decision' @{childPid=$gui.Id;reason=$fault;privateBytes=$gui.PrivateMemorySize64;heartbeatAgeMs=$(if($presence){[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()-[long]$presence.at}else{-1})} -Force
-            $recovery=Stop-WidgetResourceFault $gui $info.AppDir $info.DataDir $fault $presence
+            $recovery=Stop-WidgetResourceFault $gui $info.AppDir $info.DataDir $fault $presence $heartbeatState
             if($recovery){
               Write-WidgetDiagnostic $supervisorLog 'fault-action' @{childPid=$gui.Id;reason=$fault;action=$recovery.action} -Force
               $running=$false;$faultSamples=0
               if($recovery.action-eq 'disable'){$paused=$true;$exitReason='resource-disabled';break}
               # Recreate the GUI in this normal user session after a short cooldown.
               $nextLaunch=[DateTime]::UtcNow.AddSeconds(5)
+            }else{
+              $faultSamples=0
+              Write-WidgetDiagnostic $supervisorLog 'fault-cancelled' @{childPid=$gui.Id;reason='heartbeat-recovered-or-process-changed'} -Force
             }
           }
         }finally{$gui.Dispose()}

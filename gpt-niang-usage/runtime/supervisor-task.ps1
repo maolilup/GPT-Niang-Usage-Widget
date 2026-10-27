@@ -41,10 +41,35 @@ function Stop-WidgetGui {
   throw 'The previous widget did not stop within 6 seconds.'
 }
 
-function Get-WidgetResourceFault($Process,$Presence,[long]$Now){
+function Open-WidgetSupervisorStateStream([string]$File){
+  # The GUI atomically replaces heartbeat files. Readers must allow deletion
+  # of the old file while retaining their own stable snapshot.
+  return [IO.FileStream]::new($File,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::ReadWrite-bor [IO.FileShare]::Delete))
+}
+function Read-WidgetSupervisorPresence([string]$DataDir){
+  $stream=$null;$reader=$null
+  try{
+    $stream=Open-WidgetSupervisorStateStream (Join-Path $DataDir 'presence.json')
+    if($stream.Length-gt 1MB){return $null}
+    $reader=[IO.StreamReader]::new($stream,[Text.Encoding]::UTF8,$true)
+    return ($reader.ReadToEnd()|ConvertFrom-Json -ErrorAction Stop)
+  }catch{return $null}
+  finally{if($reader){$reader.Dispose()}elseif($stream){$stream.Dispose()}}
+}
+function Get-WidgetResourceFault($Process,$Presence,[long]$Now,$HeartbeatState=$null){
+  if($HeartbeatState-is [Collections.IDictionary]){
+    $key='{0}:{1}'-f $Process.Id,$Process.StartTime.ToUniversalTime().Ticks
+    if($HeartbeatState.key-ne $key){$HeartbeatState.Clear();$HeartbeatState.key=$key;$HeartbeatState.firstSeen=$Now;$HeartbeatState.last=$null}
+    $timestamp=0L
+    if($Presence -and $Presence.pid-eq $Process.Id -and [long]::TryParse([string]$Presence.at,[ref]$timestamp) -and $timestamp-gt 0 -and $timestamp-le $Now){
+      if(!$HeartbeatState.last -or $timestamp-ge [long]$HeartbeatState.last.at){$HeartbeatState.last=@{pid=$Process.Id;at=$timestamp}}
+    }
+    $Presence=$HeartbeatState.last
+  }
   if($Process.PrivateMemorySize64-gt 512MB){return 'memory-limit'}
   $started=[DateTimeOffset]::new($Process.StartTime.ToUniversalTime()).ToUnixTimeMilliseconds()
   if($Now-$started-lt 60000){return ''}
+  if($HeartbeatState-is [Collections.IDictionary] -and !$Presence -and $Now-[long]$HeartbeatState.firstSeen-le 30000){return ''}
   if(!$Presence -or $Presence.pid-ne $Process.Id){return 'heartbeat-timeout'}
   $at=0L
   if(![long]::TryParse([string]$Presence.at,[ref]$at)){return 'heartbeat-timeout'}
@@ -68,12 +93,20 @@ function Get-WidgetResourceRecovery($Previous,[string]$Reason,[long]$Now,[long]$
   [pscustomobject]@{action=$action;restarts=@($recent)}
 }
 
-function Stop-WidgetResourceFault($Process,[string]$AppDir,[string]$DataDir,[string]$Reason,$Presence=$null){
+function Stop-WidgetResourceFault($Process,[string]$AppDir,[string]$DataDir,[string]$Reason,$Presence=$null,$HeartbeatState=$null){
   # Recheck the executable and exact widget path before ending any process.
   $target=Get-CimInstance Win32_Process -Filter ('ProcessId='+$Process.Id) -ErrorAction Stop
   if(!$target -or $target.Name-notin @('powershell.exe','pwsh.exe') -or !$target.CommandLine -or !$target.CommandLine.Contains('"'+(Join-Path $AppDir 'widget.ps1')+'"')){return $false}
   if(!$target.CreationDate -or [Math]::Abs(($target.CreationDate.ToUniversalTime()-$Process.StartTime.ToUniversalTime()).TotalMilliseconds)-gt 1){return $false}
+  # Identity checks can be slow. Re-read after them so a recovered heartbeat
+  # cancels an obsolete termination decision, without recording a false fault.
+  $latest=Read-WidgetSupervisorPresence $DataDir
+  if(!$latest){$latest=$Presence}
+  if($Process-is [Diagnostics.Process]){$Process.Refresh()}
   $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();$at=0L
+  $currentFault=Get-WidgetResourceFault $Process $latest $now $HeartbeatState
+  if($Reason-eq 'heartbeat-timeout' -and $currentFault-ne 'heartbeat-timeout'){return $false}
+  $Presence=if($HeartbeatState-is [Collections.IDictionary] -and $HeartbeatState.last){$HeartbeatState.last}else{$latest}
   $healthy=$Presence -and $Presence.pid-eq $Process.Id -and [long]::TryParse([string]$Presence.at,[ref]$at) -and $now-$at-ge 0 -and $now-$at-le 30000
   $faultFile=Join-Path $DataDir 'resource-fault.json';$previous=$null
   if(Test-Path -LiteralPath $faultFile){
