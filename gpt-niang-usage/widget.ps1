@@ -718,6 +718,7 @@ function Tick-Widget {
   if($script:updating){return}
   $script:updating=$true
   $tickClock=[Diagnostics.Stopwatch]::StartNew();$script:diagnosticStage='resource'
+  $stageTrack=$null;if($script:diagnosticLog){$stageTrack=New-WidgetDiagnosticStage 'resource'}
   try{
   $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   if($now-$script:lastResourceProbe-ge 10000){
@@ -728,12 +729,15 @@ function Tick-Widget {
     try{Write-WidgetJson (Join-Path $script:dataDir 'resource-status.json') @{pid=$PID;at=$now;privateBytes=$process.PrivateMemorySize64;workingSetBytes=$process.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;policy='512px-48MiB-independent-window-v1'}}catch [IO.IOException]{}finally{$process.Dispose()}
   }
   $script:diagnosticStage='scene'
+  if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
   Tick-Scene $now
   Update-WidgetExpression $now
   if($now-$script:lastPresence-ge 1000 -and (Test-Path -LiteralPath (Join-Path $script:dataDir 'stop.flag'))){$script:diagnosticExitReason='stop-flag';$script:window.Close();return}
   $script:diagnosticStage='quota-worker'
+  if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
   Ensure-QuotaWorker $now
   $script:diagnosticStage='host-discovery'
+  if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
   $foreground=[GptWidgetNative]::GetAncestor([GptWidgetNative]::GetForegroundWindow(),2)
   if($foreground-ne $script:lastForeground -or ($script:hostHandle-ne [IntPtr]::Zero -and ![GptWidgetNative]::IsWindow($script:hostHandle))){
     $script:lastForeground=$foreground
@@ -743,6 +747,8 @@ function Tick-Widget {
     elseif($script:hostHandle-eq [IntPtr]::Zero -or ![GptWidgetNative]::IsWindow($script:hostHandle)){$script:hostHandle=[IntPtr]::Zero;$script:lastHostProbe=0;$script:lastPosition=$null}
   }
   if($script:hostHandle-eq [IntPtr]::Zero -and $now-$script:lastHostProbe-gt 1000){$script:hostHandle=[GptWidgetNative]::FindCodex();$script:lastHostProbe=$now}
+  $script:diagnosticStage='adaptive-layout'
+  if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
   $layout=$null
   if($script:hostHandle-ne [IntPtr]::Zero -and [GptWidgetNative]::IsWindow($script:hostHandle)){
     if($script:adaptiveHost-ne $script:hostHandle){$script:adaptiveHost=$script:hostHandle;$script:adaptiveHidden=$false}
@@ -754,6 +760,7 @@ function Tick-Widget {
   $visible=$layout -and $layout.visible -and [GptWidgetZOrderNative]::VisibleSurface($script:hostHandle) -and ![GptWidgetNative]::IsIconic($script:hostHandle)
   if($visible){
     $script:diagnosticStage='window-position'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     if($script:attachedHost-ne $script:hostHandle){
       $script:attachedHost=$script:hostHandle;$script:lastPosition=$null
     }
@@ -776,35 +783,55 @@ function Tick-Widget {
       }
       $script:hostFollower.Configure($script:hostHandle,$frame.Left,$frame.Top,$frame.Right,$frame.Bottom,$w,$h,[int]($script:offsetLeft*$dpi),[int]($script:offsetRight*$dpi),[int]($script:offsetBottom*$dpi),$script:anchor,$true)
     }
+    $script:diagnosticStage='window-layer'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     $layer=Set-WidgetAboveHost $script:widgetHandle $script:hostHandle
     if(!$layer.ok){Write-WidgetDiagnostic $script:diagnosticLog 'layer-failed' @{reason=$layer.reason;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64()}}
   }elseif($script:window.IsVisible){
+    $script:diagnosticStage='window-hide'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     $script:hostFollower.Suspend()
     $script:context.IsOpen=$false
     # Also return any owned quote editor to the normal band before hiding the overlay.
     [GptWidgetNative]::SetWindowPos($script:widgetHandle,[IntPtr](-2),0,0,0,0,0x4413)|Out-Null
     $script:window.Hide()
   }
+  $script:diagnosticStage='window-state-log'
+  if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
   $stateKey='{0}:{1}:{2}:{3}:{4}'-f $script:hostHandle.ToInt64(),[bool]$visible,$script:adaptiveHidden,[GptWidgetZOrderNative]::Topmost($script:widgetHandle),$script:lastForeground.ToInt64()
   if($stateKey-ne $script:diagnosticStateKey){
     $script:diagnosticStateKey=$stateKey
     Write-WidgetDiagnostic $script:diagnosticLog 'window-state' @{host=$script:hostHandle.ToInt64();hostPid=[GptWidgetNative]::ProcessId($script:hostHandle);widget=$script:widgetHandle.ToInt64();visible=[bool]$visible;state=$(if($script:adaptiveHidden){'adaptive-hidden'}elseif(!$visible){'host-unavailable'}else{'visible'});foreground=$script:lastForeground.ToInt64();owner=[GptWidgetNative]::GetWindowLongPtr($script:widgetHandle,-8).ToInt64();topmost=[GptWidgetZOrderNative]::Topmost($script:widgetHandle);displayScale=$script:displayScale} -Force
   }
   if($now-$script:lastPresence-ge 1000){
-    $script:diagnosticStage='presence'
+    $script:diagnosticStage='dialogue-config'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     Sync-WidgetDialogueConfiguration $now
+    $script:diagnosticStage='quota-render'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     Update-Quota
+    $script:diagnosticStage='display-request'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     Read-DisplayRequest
+    $script:diagnosticStage='low-quota-dialogue'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     Tick-LowQuotaDialogue $now ([bool]$visible) ($script:foregroundHost-eq $script:hostHandle -or $script:foregroundOwn)
+    $script:diagnosticStage='ambient-dialogue'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     Tick-AmbientQuote $now ([bool]$visible) ($script:foregroundHost-eq $script:hostHandle -or $script:foregroundOwn)
+    $script:diagnosticStage='expression-update'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     Update-WidgetExpression $now
+    $script:diagnosticStage='heartbeat-write'
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};ambientDialogue=@{enabled=$script:autoDialogueEnabled;paused=$script:ambientQuoteState.blocked;nextAt=$script:ambientQuoteState.nextAt;count=$script:ambientQuoteState.count;lastShownAt=$script:ambientQuoteState.lastShownAt};dialogueConfig=@{path=$script:widgetDialogueState.path;reloads=$script:widgetDialogueState.reloads;loadedAt=$script:widgetDialogueState.loadedAt;error=$script:widgetDialogueState.error};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;origin=$script:sceneOrigin;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
     $script:lastPresence=$now
   }
   }finally{
-    if($script:diagnosticLog -and ($now-$script:lastDiagnosticSample-ge 10000 -or $tickClock.ElapsedMilliseconds-ge 1000)){
+    if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack 'complete'}
+    if($script:diagnosticLog -and ($now-$script:lastDiagnosticSample-ge 10000 -or $stageTrack.activeMs-ge 1000)){
       $script:lastDiagnosticSample=$now;$sampleProcess=[Diagnostics.Process]::GetCurrentProcess()
-      try{Write-WidgetDiagnostic $script:diagnosticLog 'sample' @{privateBytes=$sampleProcess.PrivateMemorySize64;workingSetBytes=$sampleProcess.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);handles=$sampleProcess.HandleCount;cpuMs=[long]$sampleProcess.TotalProcessorTime.TotalMilliseconds;tickMs=$tickClock.ElapsedMilliseconds;stage=$script:diagnosticStage;heartbeatAgeMs=($now-$script:lastPresence);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;followEvents=$script:hostFollower.MovementEvents;positionChanges=$script:hostFollower.PositionChanges}}catch{}finally{$sampleProcess.Dispose()}
+      try{Write-WidgetDiagnostic $script:diagnosticLog 'sample' @{privateBytes=$sampleProcess.PrivateMemorySize64;workingSetBytes=$sampleProcess.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);handles=$sampleProcess.HandleCount;cpuMs=[long]$sampleProcess.TotalProcessorTime.TotalMilliseconds;tickMs=$tickClock.ElapsedMilliseconds;tickActiveMs=$stageTrack.activeMs;stage=$script:diagnosticStage;heartbeatAgeMs=($now-$script:lastPresence);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;followEvents=$script:hostFollower.MovementEvents;positionChanges=$script:hostFollower.PositionChanges}}catch{}finally{$sampleProcess.Dispose()}
     }
     $script:updating=$false
   }

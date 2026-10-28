@@ -1,4 +1,31 @@
 # Fixed-size, best-effort JSONL. No UI callbacks, background queue or transcript.
+if(!('GptWidgetDiagnosticClock' -as [type])){
+  try{Add-Type -TypeDefinition @'
+using System;using System.Runtime.InteropServices;
+public static class GptWidgetDiagnosticClock {
+ [DllImport("kernel32.dll")]static extern bool QueryUnbiasedInterruptTime(out ulong time);
+ public static long ActiveMilliseconds {get{ulong time;return QueryUnbiasedInterruptTime(out time)?(long)(time/10000):-1;}}
+}
+'@}catch{}
+}
+function New-WidgetDiagnosticStage([string]$Stage,[long]$Now=-1){
+  try{if($Now-lt 0){$Now=[GptWidgetDiagnosticClock]::ActiveMilliseconds};if($Now-lt 0){return $null};return @{stage=$Stage;started=$Now;since=$Now;activeMs=0L}}catch{return $null}
+}
+function Set-WidgetDiagnosticStage($Log,$State,[string]$Stage,[long]$Now=-1){
+  if(!$State){return}
+  try{
+    $providedClock=$Now-ge 0
+    if($Now-lt 0){$Now=[GptWidgetDiagnosticClock]::ActiveMilliseconds}
+    if($Now-lt [long]$State.since){return}
+    $duration=$Now-[long]$State.since
+    $previous=$State.stage;$State.activeMs=$Now-[long]$State.started;$State.stage=$Stage;$State.since=$Now
+    if($duration-ge 1000){
+      Write-WidgetDiagnostic $Log 'slow-stage' @{stage=$previous;elapsedMs=$duration;tickActiveMs=$State.activeMs} -Force
+      # Do not attribute diagnostic file I/O to the operation that starts next.
+      if(!$providedClock){$afterLog=[GptWidgetDiagnosticClock]::ActiveMilliseconds;if($afterLog-ge $Now){$State.since=$afterLog}}
+    }
+  }catch{}
+}
 function New-WidgetDiagnosticLog([string]$DataDir,[ValidateSet('widget','supervisor','observer')][string]$Component,[int]$MaxBytes=1048576){
   $directory=Join-Path $DataDir 'logs'
   $hash=[Security.Cryptography.SHA256]::Create()
@@ -16,7 +43,7 @@ function Write-WidgetDiagnostic($Log,[string]$Event,[System.Collections.IDiction
     try{$owned=$Log.mutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$owned=$true}
     if(!$owned){$Log.suppressed++;return}
     # Only diagnostic primitives from explicitly permitted fields are accepted.
-    $allowed='privateBytes workingSetBytes managedBytes handles cpuMs threads uptimeMs stage state reason action hostPid host widget visible hostVisible foreground owner topmost displayScale scale spriteBytes spriteCount spriteDecodes followEvents positionChanges tickMs heartbeatAgeMs faultSamples childPid parentPid exitCode signal ok queryOk errorCode errorType hresult stack elapsedMs method requestId pending queryId eventId recordId provider observedUtc osError changed count nextLaunchMs processStartedAt policy version sourceVersion enabled paused mainWindows busy hostEvents frameWidth frameHeight remainingMinutes'.Split(' ')
+    $allowed='privateBytes workingSetBytes managedBytes handles cpuMs threads uptimeMs stage state reason action hostPid host widget visible hostVisible foreground owner topmost displayScale scale spriteBytes spriteCount spriteDecodes followEvents positionChanges tickMs tickActiveMs heartbeatAgeMs faultSamples childPid parentPid exitCode signal ok queryOk errorCode errorType hresult stack elapsedMs method requestId pending queryId eventId recordId provider observedUtc osError changed count nextLaunchMs processStartedAt policy version sourceVersion enabled paused mainWindows busy hostEvents frameWidth frameHeight remainingMinutes'.Split(' ')
     $safe=@{}
     foreach($key in $allowed){
       if(!$Data.Contains($key)){continue};$value=$Data[$key]
@@ -44,7 +71,9 @@ function Write-WidgetDiagnosticError($Log,[string]$Event,$Record,[string]$Stage)
   try{
     $exception=if($Record-is [Exception]){$Record}else{$Record.Exception}
     $frames=if($Record-is [Exception]){''}else{[string]$Record.ScriptStackTrace}
-    Write-WidgetDiagnostic $Log $Event @{stage=$Stage;errorType=$exception.GetType().FullName;hresult=$exception.HResult;stack=($frames+"`n"+[string]$exception.StackTrace)}
+    $cause=$exception
+    for($depth=0;$depth-lt 8 -and $cause.InnerException;$depth++){$cause=$cause.InnerException}
+    Write-WidgetDiagnostic $Log $Event @{stage=$Stage;errorType=$cause.GetType().FullName;hresult=$cause.HResult;stack=($frames+"`n"+[string]$exception.StackTrace)}
   }catch{}
 }
 function Close-WidgetDiagnosticLog($Log){if($Log -and $Log.mutex){try{$Log.mutex.Dispose()}catch{};$Log.mutex=$null}}
