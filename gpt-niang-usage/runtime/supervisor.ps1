@@ -93,7 +93,7 @@ $nextLaunch=[DateTime]::MinValue
 $nextStatus=[DateTime]::MinValue
 $lastVisibleHostKey=''
 $pendingGui=$null
-$faultPid=0;$faultSamples=0;$heartbeatState=@{}
+$faultIdentity='';$faultSamples=0;$lastFault='';$heartbeatState=@{}
 $supervisorProcess=Get-Process -Id $PID
 try{$processStartedAt=$supervisorProcess.StartTime.ToUniversalTime().ToString('o')}finally{$supervisorProcess.Dispose()}
 try{
@@ -119,17 +119,26 @@ try{
         $presence=Read-WidgetSupervisorPresence $info.DataDir
         $gui=Get-Process -Id ([int]$record.pid) -ErrorAction Stop
         try{
-          if($faultPid-ne $gui.Id){$faultPid=$gui.Id;$faultSamples=0}
-          $fault=Get-WidgetResourceFault $gui $presence ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) $heartbeatState
-          $effectivePresence=$heartbeatState.last
-          if(!$presence){Write-WidgetDiagnostic $supervisorLog 'heartbeat-unavailable' @{childPid=$gui.Id;state=$(if($effectivePresence){'cached'}else{'missing'});heartbeatAgeMs=$(if($effectivePresence){[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()-[long]$effectivePresence.at}else{-1})}}
+          $identity='{0}:{1}'-f $gui.Id,$gui.StartTime.ToUniversalTime().Ticks
+          $resumeBefore=$heartbeatState.resumeAt
+          $clock=Get-WidgetHeartbeatClock
+          $fault=Get-WidgetResourceFault $gui $presence ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) $heartbeatState $clock
+          $heartbeatAgeMs=if($null-ne $heartbeatState.heartbeatAgeMs){$heartbeatState.heartbeatAgeMs}else{-1}
+          if(!$presence){Write-WidgetDiagnostic $supervisorLog 'heartbeat-unavailable' @{childPid=$gui.Id;state=$(if($heartbeatState.last){'cached'}else{'missing'});heartbeatAgeMs=$heartbeatAgeMs}}
+          if($heartbeatState.resumeAt -and $heartbeatState.resumeAt-ne $resumeBefore){
+            Write-WidgetDiagnostic $supervisorLog 'heartbeat-resume' @{childPid=$gui.Id;heartbeatAgeMs=$heartbeatAgeMs;elapsedMs=120000} -Force
+            if($lastFault-eq 'heartbeat-timeout'){$faultSamples=0}
+          }
+          if($identity-ne $faultIdentity -or $fault-ne $lastFault){$faultSamples=0}
+          $faultIdentity=$identity
+          $lastFault=$fault
           if($fault){$faultSamples++}else{$faultSamples=0}
           if($fault -or [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()-$lastDiagnostic-ge 10000){
             $lastDiagnostic=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-            Write-WidgetDiagnostic $supervisorLog 'gui-sample' @{childPid=$gui.Id;privateBytes=$gui.PrivateMemorySize64;workingSetBytes=$gui.WorkingSet64;handles=$gui.HandleCount;heartbeatAgeMs=$(if($effectivePresence){$lastDiagnostic-[long]$effectivePresence.at}else{-1});state=$(if($presence){'file'}else{'cached'});faultSamples=$faultSamples;reason=[string]$fault} -Force
+            Write-WidgetDiagnostic $supervisorLog 'gui-sample' @{childPid=$gui.Id;privateBytes=$gui.PrivateMemorySize64;workingSetBytes=$gui.WorkingSet64;handles=$gui.HandleCount;heartbeatAgeMs=$heartbeatAgeMs;state=$(if($presence){'file'}else{'cached'});faultSamples=$faultSamples;reason=[string]$fault} -Force
           }
           if($faultSamples-ge 3){
-            Write-WidgetDiagnostic $supervisorLog 'fault-decision' @{childPid=$gui.Id;reason=$fault;privateBytes=$gui.PrivateMemorySize64;heartbeatAgeMs=$(if($presence){[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()-[long]$presence.at}else{-1})} -Force
+            Write-WidgetDiagnostic $supervisorLog 'fault-decision' @{childPid=$gui.Id;reason=$fault;privateBytes=$gui.PrivateMemorySize64;heartbeatAgeMs=$heartbeatAgeMs} -Force
             $recovery=Stop-WidgetResourceFault $gui $info.AppDir $info.DataDir $fault $presence $heartbeatState
             if($recovery){
               Write-WidgetDiagnostic $supervisorLog 'fault-action' @{childPid=$gui.Id;reason=$fault;action=$recovery.action} -Force
@@ -143,7 +152,7 @@ try{
             }
           }
         }finally{$gui.Dispose()}
-      }else{$faultPid=0;$faultSamples=0}
+      }else{$faultIdentity='';$faultSamples=0;$lastFault=''}
       # Retain the launch handle until startup finishes, so slow WPF startup
       # cannot create another GUI process before runtime.json is available.
       if($pendingGui -and ($running -or $pendingGui.HasExited)){

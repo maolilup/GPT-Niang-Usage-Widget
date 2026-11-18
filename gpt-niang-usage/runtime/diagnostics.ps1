@@ -4,9 +4,14 @@ if(!('GptWidgetDiagnosticClock' -as [type])){
 using System;using System.Runtime.InteropServices;
 public static class GptWidgetDiagnosticClock {
  [DllImport("kernel32.dll")]static extern bool QueryUnbiasedInterruptTime(out ulong time);
+ [DllImport("kernel32.dll")]static extern ulong GetTickCount64();
  public static long ActiveMilliseconds {get{ulong time;return QueryUnbiasedInterruptTime(out time)?(long)(time/10000):-1;}}
+ public static long UptimeMilliseconds {get{return (long)GetTickCount64();}}
 }
 '@}catch{}
+}
+function Get-WidgetActiveMilliseconds {
+  try{return [GptWidgetDiagnosticClock]::ActiveMilliseconds}catch{return -1L}
 }
 function New-WidgetDiagnosticStage([string]$Stage,[long]$Now=-1){
   try{if($Now-lt 0){$Now=[GptWidgetDiagnosticClock]::ActiveMilliseconds};if($Now-lt 0){return $null};return @{stage=$Stage;started=$Now;since=$Now;activeMs=0L}}catch{return $null}

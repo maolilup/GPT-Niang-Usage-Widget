@@ -578,6 +578,7 @@ Remove-Item -LiteralPath (Join-Path $script:dataDir 'stop.flag') -ErrorAction Si
 $script:worker=$null
 $script:lastWorkerProbe=0;$script:lastWorkerStart=0;$script:runtimeClosed=$false
 $script:hostHandle=[GptWidgetNative]::FindCodex();$script:lastPresence=0;$script:lastHostProbe=0;$script:drag=$null
+$script:lastPresenceActive=-1L
 $script:lastForeground=[IntPtr](-1);$script:foregroundHost=[IntPtr]::Zero;$script:foregroundOwn=$false
 $script:lastPosition=$null;$script:attachedHost=[IntPtr]::Zero;$script:updating=$false
 $script:adaptiveHost=[IntPtr]::Zero;$script:adaptiveHidden=$false
@@ -721,6 +722,12 @@ function Tick-Widget {
   $stageTrack=$null;if($script:diagnosticLog){$stageTrack=New-WidgetDiagnosticStage 'resource'}
   try{
   $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+  $activeNow=Get-WidgetActiveMilliseconds
+  $presenceDue=if($activeNow-ge 0 -and $script:lastPresenceActive-ge 0){
+    $activeNow-$script:lastPresenceActive-ge 1000
+  }else{
+    $now-lt $script:lastPresence -or $now-$script:lastPresence-ge 1000
+  }
   if($now-$script:lastResourceProbe-ge 10000){
     # Telemetry is best effort: a reader locking this file must not suppress
     # interaction, stop requests or the independent guardian's heartbeat.
@@ -732,7 +739,7 @@ function Tick-Widget {
   if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
   Tick-Scene $now
   Update-WidgetExpression $now
-  if($now-$script:lastPresence-ge 1000 -and (Test-Path -LiteralPath (Join-Path $script:dataDir 'stop.flag'))){$script:diagnosticExitReason='stop-flag';$script:window.Close();return}
+  if($presenceDue -and (Test-Path -LiteralPath (Join-Path $script:dataDir 'stop.flag'))){$script:diagnosticExitReason='stop-flag';$script:window.Close();return}
   $script:diagnosticStage='quota-worker'
   if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
   Ensure-QuotaWorker $now
@@ -803,7 +810,7 @@ function Tick-Widget {
     $script:diagnosticStateKey=$stateKey
     Write-WidgetDiagnostic $script:diagnosticLog 'window-state' @{host=$script:hostHandle.ToInt64();hostPid=[GptWidgetNative]::ProcessId($script:hostHandle);widget=$script:widgetHandle.ToInt64();visible=[bool]$visible;state=$(if($script:adaptiveHidden){'adaptive-hidden'}elseif(!$visible){'host-unavailable'}else{'visible'});foreground=$script:lastForeground.ToInt64();owner=[GptWidgetNative]::GetWindowLongPtr($script:widgetHandle,-8).ToInt64();topmost=[GptWidgetZOrderNative]::Topmost($script:widgetHandle);displayScale=$script:displayScale} -Force
   }
-  if($now-$script:lastPresence-ge 1000){
+  if($presenceDue){
     $script:diagnosticStage='dialogue-config'
     if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
     Sync-WidgetDialogueConfiguration $now
@@ -824,14 +831,30 @@ function Tick-Widget {
     Update-WidgetExpression $now
     $script:diagnosticStage='heartbeat-write'
     if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack $script:diagnosticStage}
-    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') @{visible=[bool]$visible;at=$now;expression=$script:expressionCurrent;scale=$script:scale;displayScale=$script:displayScale;host=$script:hostHandle.ToInt64();widget=$script:widgetHandle.ToInt64();pid=$PID;follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14};ambientDialogue=@{enabled=$script:autoDialogueEnabled;paused=$script:ambientQuoteState.blocked;nextAt=$script:ambientQuoteState.nextAt;count=$script:ambientQuoteState.count;lastShownAt=$script:ambientQuoteState.lastShownAt};dialogueConfig=@{path=$script:widgetDialogueState.path;reloads=$script:widgetDialogueState.reloads;loadedAt=$script:widgetDialogueState.loadedAt;error=$script:widgetDialogueState.error};scene=@{open=!$script:collapsed;mode=$script:bubbleMode;origin=$script:sceneOrigin;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}}
-    $script:lastPresence=$now
+    $presence=@{
+      visible=[bool]$visible; expression=$script:expressionCurrent; scale=$script:scale; displayScale=$script:displayScale
+      host=$script:hostHandle.ToInt64(); widget=$script:widgetHandle.ToInt64(); pid=$PID; processStartTicks=$script:processStartTicks
+      follow=@{ready=$script:hostFollower.Ready;events=$script:hostFollower.MovementEvents;mode='native-immediate';animationPaddingDip=14}
+      ambientDialogue=@{enabled=$script:autoDialogueEnabled;paused=$script:ambientQuoteState.blocked;nextAt=$script:ambientQuoteState.nextAt;count=$script:ambientQuoteState.count;lastShownAt=$script:ambientQuoteState.lastShownAt}
+      dialogueConfig=@{path=$script:widgetDialogueState.path;reloads=$script:widgetDialogueState.reloads;loadedAt=$script:widgetDialogueState.loadedAt;error=$script:widgetDialogueState.error}
+      scene=@{open=!$script:collapsed;mode=$script:bubbleMode;origin=$script:sceneOrigin;quote=$(if(!$script:collapsed -and $script:bubbleMode-eq 'quote'){[string]$script:ui.QuoteText.Tag}else{$null});resetTimeMode=$script:resetTimeMode;startedAt=$script:sceneStartedAt;closesAt=$script:sceneDeadline;shortReset=$script:ui.ShortReset.Text;weekReset=$script:ui.WeekReset.Text}
+    }
+    # A long update can cross sleep or a clock change before it gets here.
+    $presence.at=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $presence.activeAt=Get-WidgetActiveMilliseconds
+    Write-WidgetJson (Join-Path $script:dataDir 'presence.json') $presence
+    $script:lastPresence=$presence.at
+    $script:lastPresenceActive=$presence.activeAt
   }
   }finally{
     if($stageTrack){Set-WidgetDiagnosticStage $script:diagnosticLog $stageTrack 'complete'}
     if($script:diagnosticLog -and ($now-$script:lastDiagnosticSample-ge 10000 -or $stageTrack.activeMs-ge 1000)){
       $script:lastDiagnosticSample=$now;$sampleProcess=[Diagnostics.Process]::GetCurrentProcess()
-      try{Write-WidgetDiagnostic $script:diagnosticLog 'sample' @{privateBytes=$sampleProcess.PrivateMemorySize64;workingSetBytes=$sampleProcess.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);handles=$sampleProcess.HandleCount;cpuMs=[long]$sampleProcess.TotalProcessorTime.TotalMilliseconds;tickMs=$tickClock.ElapsedMilliseconds;tickActiveMs=$stageTrack.activeMs;stage=$script:diagnosticStage;heartbeatAgeMs=($now-$script:lastPresence);spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;followEvents=$script:hostFollower.MovementEvents;positionChanges=$script:hostFollower.PositionChanges}}catch{}finally{$sampleProcess.Dispose()}
+      try{
+        $sampleTime=Get-WidgetActiveMilliseconds
+        $heartbeatAgeMs=if($sampleTime-ge 0 -and $script:lastPresenceActive-ge 0){$sampleTime-$script:lastPresenceActive}else{-1}
+        Write-WidgetDiagnostic $script:diagnosticLog 'sample' @{privateBytes=$sampleProcess.PrivateMemorySize64;workingSetBytes=$sampleProcess.WorkingSet64;managedBytes=[GC]::GetTotalMemory($false);handles=$sampleProcess.HandleCount;cpuMs=[long]$sampleProcess.TotalProcessorTime.TotalMilliseconds;tickMs=$tickClock.ElapsedMilliseconds;tickActiveMs=$stageTrack.activeMs;stage=$script:diagnosticStage;heartbeatAgeMs=$heartbeatAgeMs;spriteBytes=$script:expressionCacheBytes;spriteCount=$script:expressionCache.Count;spriteDecodes=$script:expressionDecodeCount;followEvents=$script:hostFollower.MovementEvents;positionChanges=$script:hostFollower.PositionChanges}
+      }catch{}finally{$sampleProcess.Dispose()}
     }
     $script:updating=$false
   }
@@ -865,7 +888,11 @@ try{
   Save-Settings
   Ensure-QuotaWorker ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
   $widgetProcess=Get-Process -Id $PID
-  try{$processStartedAt=$widgetProcess.StartTime.ToUniversalTime().ToString('o')}finally{$widgetProcess.Dispose()}
+  try{
+    $started=$widgetProcess.StartTime.ToUniversalTime()
+    $processStartedAt=$started.ToString('o')
+    $script:processStartTicks=$started.Ticks
+  }finally{$widgetProcess.Dispose()}
   Write-WidgetJson (Join-Path $script:dataDir 'runtime.json') @{pid=$PID;widget=$script:widgetHandle.ToInt64();startedAt=[DateTime]::UtcNow.ToString('o');processStartedAt=$processStartedAt;eventHooks=@($script:eventHooks|ForEach-Object{$_.ToInt64()});fallbackIntervalMs=1000;movementMode='native-immediate'}
   $script:timer.Start();Tick-Widget
   [Windows.Threading.Dispatcher]::Run()

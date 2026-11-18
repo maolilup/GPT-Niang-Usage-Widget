@@ -1,5 +1,6 @@
 param([string]$TestRoot=$PSScriptRoot)
 $ErrorActionPreference='Stop'
+. (Join-Path (Split-Path $TestRoot -Parent) 'runtime\diagnostics.ps1')
 $source=[IO.File]::ReadAllText((Join-Path (Split-Path $TestRoot -Parent) 'widget.ps1'),[Text.Encoding]::UTF8)
 $ast=[Management.Automation.Language.Parser]::ParseInput($source,[ref]$null,[ref]$null)
 $tick=$ast.Find({param($node)$node-is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name-eq 'Tick-Widget'},$true).Extent.Text

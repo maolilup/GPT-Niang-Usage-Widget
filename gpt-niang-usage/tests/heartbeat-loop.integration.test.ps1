@@ -22,10 +22,11 @@ function Read-WidgetSupervisorPresence([string]$DataDir){
   }
   return $value
 }
-function Get-WidgetResourceFault($Process,$Presence,[long]$Now,$State=$null){
+function Get-WidgetResourceFault($Process,$Presence,[long]$Now,$State=$null,$Clock=$null){
   # Accelerate startup grace only. The real 30-second expiry remains in force.
-  $pastStartup=[pscustomobject]@{Id=$Process.Id;PrivateMemorySize64=$Process.PrivateMemorySize64;StartTime=$Process.StartTime.AddMinutes(-2)}
-  & $script:realFaultClassifier $pastStartup $Presence $Now $State
+  $fault=& $script:realFaultClassifier $Process $Presence $Now $State $Clock
+  if($State.startupUntil-gt $State.now){$State.startupUntil=$State.now}
+  return $fault
 }
 '@
 $marker=". (Join-Path `$PSScriptRoot 'supervisor-task.ps1')"
@@ -37,13 +38,14 @@ param([string]$AppDir)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Windows.Forms
 . (Join-Path $AppDir 'runtime\supervisor-task.ps1')
+. (Join-Path $AppDir 'runtime\diagnostics.ps1')
 $data=(Get-Content (Join-Path $AppDir 'installation.json') -Raw|ConvertFrom-Json).dataDir
 $form=[Windows.Forms.Form]::new();$handle=$form.Handle # Never shown or activated.
 $self=Get-Process -Id $PID
-try{$started=$self.StartTime.ToUniversalTime().ToString('o')}finally{$self.Dispose()}
+try{$startTime=$self.StartTime.ToUniversalTime();$started=$startTime.ToString('o');$startTicks=$startTime.Ticks}finally{$self.Dispose()}
 Write-WidgetSupervisorJson (Join-Path $data 'runtime.json') @{pid=$PID;widget=$handle.ToInt64();processStartedAt=$started;startedAt=[DateTime]::UtcNow.ToString('o')}
 $timer=[Windows.Forms.Timer]::new();$timer.Interval=200
-$timer.Add_Tick({if(!(Test-Path (Join-Path $data 'freeze-heartbeat.flag'))){Write-WidgetSupervisorJson (Join-Path $data 'presence.json') @{pid=$PID;at=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()}}})
+$timer.Add_Tick({if(!(Test-Path (Join-Path $data 'freeze-heartbeat.flag'))){Write-WidgetSupervisorJson (Join-Path $data 'presence.json') @{pid=$PID;at=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();activeAt=(Get-WidgetActiveMilliseconds);processStartTicks=$startTicks}}})
 try{$timer.Start();[Windows.Forms.Application]::Run()}finally{$timer.Dispose();$form.Dispose()}
 '@
 [IO.File]::WriteAllText((Join-Path $app 'widget.ps1'),$gui)
@@ -65,6 +67,7 @@ try{
   if($process.HasExited -or $child.HasExited -or (Test-Path (Join-Path $data 'resource-fault.json'))){throw 'A live GUI was terminated for transient read failures.'}
   [IO.File]::WriteAllText((Join-Path $data 'freeze-heartbeat.flag'),'test')
   $last=Get-Content (Join-Path $data 'presence.json') -Raw|ConvertFrom-Json
+  if($last.activeAt-le 0 -or $last.processStartTicks-ne $child.StartTime.ToUniversalTime().Ticks){throw 'Fixture did not publish an identified active-clock heartbeat.'}
   if(!$process.WaitForExit(45000)){throw ('A genuinely stale heartbeat did not stop the guardian: '+$fixture)}
   if(!$child.WaitForExit(3000)){throw 'The genuinely stalled fixture survived the watchdog.'}
   $fault=Get-Content (Join-Path $data 'resource-fault.json') -Raw|ConvertFrom-Json

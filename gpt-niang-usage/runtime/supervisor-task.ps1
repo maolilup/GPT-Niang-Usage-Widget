@@ -56,20 +56,78 @@ function Read-WidgetSupervisorPresence([string]$DataDir){
   }catch{return $null}
   finally{if($reader){$reader.Dispose()}elseif($stream){$stream.Dispose()}}
 }
-function Get-WidgetResourceFault($Process,$Presence,[long]$Now,$HeartbeatState=$null){
-  if($HeartbeatState-is [Collections.IDictionary]){
-    $key='{0}:{1}'-f $Process.Id,$Process.StartTime.ToUniversalTime().Ticks
-    if($HeartbeatState.key-ne $key){$HeartbeatState.Clear();$HeartbeatState.key=$key;$HeartbeatState.firstSeen=$Now;$HeartbeatState.last=$null}
-    $timestamp=0L
-    if($Presence -and $Presence.pid-eq $Process.Id -and [long]::TryParse([string]$Presence.at,[ref]$timestamp) -and $timestamp-gt 0 -and $timestamp-le $Now){
-      if(!$HeartbeatState.last -or $timestamp-ge [long]$HeartbeatState.last.at){$HeartbeatState.last=@{pid=$Process.Id;at=$timestamp}}
-    }
-    $Presence=$HeartbeatState.last
-  }
-  if($Process.PrivateMemorySize64-gt 512MB){return 'memory-limit'}
+function Get-WidgetHeartbeatClock {
+  try {
+    $before=[GptWidgetDiagnosticClock]::UptimeMilliseconds
+    $activeMs=[GptWidgetDiagnosticClock]::ActiveMilliseconds
+    $after=[GptWidgetDiagnosticClock]::UptimeMilliseconds
+    if($activeMs-lt 0){return $null}
+    # Reject a suspend sample if this thread was delayed between clock reads.
+    $suspendMs=if($after-$before-le 100){[Math]::Max(0L,$after-$activeMs)}else{-1L}
+    return @{activeMs=$activeMs;suspendMs=$suspendMs}
+  }catch{return $null}
+}
+
+function Get-WidgetResourceFault($Process,$Presence,[long]$Now,$HeartbeatState=$null,$Clock=$null){
+  $startTicks=$Process.StartTime.ToUniversalTime().Ticks
   $started=[DateTimeOffset]::new($Process.StartTime.ToUniversalTime()).ToUnixTimeMilliseconds()
+  if($HeartbeatState-is [Collections.IDictionary]){
+    $key='{0}:{1}'-f $Process.Id,$startTicks
+    $useActive=$null-ne $Clock -and $Clock.activeMs-ge 0
+    $heartbeatNow=if($useActive){[long]$Clock.activeMs}else{$Now}
+    if($HeartbeatState.key-ne $key -or $HeartbeatState.useActive-ne $useActive -or $heartbeatNow-lt $HeartbeatState.now){
+      $HeartbeatState.Clear()
+      $HeartbeatState.key=$key
+      $HeartbeatState.useActive=$useActive
+      $HeartbeatState.firstSeen=$heartbeatNow
+      $HeartbeatState.startupUntil=$heartbeatNow+[Math]::Max(0L,60000L-[Math]::Max(0L,$Now-$started))
+    }
+    $HeartbeatState.now=$heartbeatNow
+
+    if($useActive -and $Clock.suspendMs-ge 0){
+      if($null-ne $HeartbeatState.suspendMs -and $Clock.suspendMs-$HeartbeatState.suspendMs-ge 2000){
+        $HeartbeatState.resumeAt=$heartbeatNow
+        $HeartbeatState.resumeUntil=$heartbeatNow+120000
+      }
+      $HeartbeatState.suspendMs=$Clock.suspendMs
+    }
+
+    if($Presence -and $Presence.pid-eq $Process.Id){
+      $activeAt=0L
+      $wallAt=0L
+      if($useActive -and [long]::TryParse([string]$Presence.activeAt,[ref]$activeAt) -and $activeAt-gt 0){
+        if($Presence.processStartTicks-eq $startTicks -and $activeAt-le $heartbeatNow -and
+            (!$HeartbeatState.native -or $activeAt-gt $HeartbeatState.last.at)){
+          $HeartbeatState.last=@{at=$activeAt}
+          $HeartbeatState.native=$true
+        }
+      }elseif(!$HeartbeatState.native -and [long]::TryParse([string]$Presence.at,[ref]$wallAt) -and
+          $wallAt-gt 0 -and $wallAt-le $Now -and $wallAt-ne $HeartbeatState.lastWallAt){
+        # Older writers only publish UTC. Translate a changed, valid sample once
+        # so repeated reads of the same file cannot renew its observed heartbeat.
+        $projected=$heartbeatNow-($Now-$wallAt)
+        if(!$HeartbeatState.last -or $projected-gt $HeartbeatState.last.at){
+          $HeartbeatState.last=@{at=$projected}
+          $HeartbeatState.lastWallAt=$wallAt
+        }
+      }
+    }
+
+    $age=if($HeartbeatState.last){$heartbeatNow-[long]$HeartbeatState.last.at}else{-1L}
+    $HeartbeatState.heartbeatAgeMs=$age
+    if($HeartbeatState.resumeUntil -and ($heartbeatNow-ge $HeartbeatState.resumeUntil -or
+        ($HeartbeatState.last -and $HeartbeatState.last.at-gt $HeartbeatState.resumeAt))){
+      $HeartbeatState.resumeUntil=0L
+    }
+    if($Process.PrivateMemorySize64-gt 512MB){return 'memory-limit'}
+    if($heartbeatNow-lt $HeartbeatState.startupUntil -or $HeartbeatState.resumeUntil){return ''}
+    if(!$HeartbeatState.last -and $heartbeatNow-$HeartbeatState.firstSeen-le 30000){return ''}
+    if($age-lt 0 -or $age-gt 30000){return 'heartbeat-timeout'}
+    return ''
+  }
+
+  if($Process.PrivateMemorySize64-gt 512MB){return 'memory-limit'}
   if($Now-$started-lt 60000){return ''}
-  if($HeartbeatState-is [Collections.IDictionary] -and !$Presence -and $Now-[long]$HeartbeatState.firstSeen-le 30000){return ''}
   if(!$Presence -or $Presence.pid-ne $Process.Id){return 'heartbeat-timeout'}
   $at=0L
   if(![long]::TryParse([string]$Presence.at,[ref]$at)){return 'heartbeat-timeout'}
@@ -98,31 +156,40 @@ function Stop-WidgetResourceFault($Process,[string]$AppDir,[string]$DataDir,[str
   $target=Get-CimInstance Win32_Process -Filter ('ProcessId='+$Process.Id) -ErrorAction Stop
   if(!$target -or $target.Name-notin @('powershell.exe','pwsh.exe') -or !$target.CommandLine -or !$target.CommandLine.Contains('"'+(Join-Path $AppDir 'widget.ps1')+'"')){return $false}
   if(!$target.CreationDate -or [Math]::Abs(($target.CreationDate.ToUniversalTime()-$Process.StartTime.ToUniversalTime()).TotalMilliseconds)-gt 1){return $false}
-  # Identity checks can be slow. Re-read after them so a recovered heartbeat
-  # cancels an obsolete termination decision, without recording a false fault.
-  $latest=Read-WidgetSupervisorPresence $DataDir
-  if(!$latest){$latest=$Presence}
-  if($Process-is [Diagnostics.Process]){$Process.Refresh()}
-  $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();$at=0L
-  $currentFault=Get-WidgetResourceFault $Process $latest $now $HeartbeatState
-  if($Reason-eq 'heartbeat-timeout' -and $currentFault-ne 'heartbeat-timeout'){return $false}
-  $Presence=if($HeartbeatState-is [Collections.IDictionary] -and $HeartbeatState.last){$HeartbeatState.last}else{$latest}
-  $healthy=$Presence -and $Presence.pid-eq $Process.Id -and [long]::TryParse([string]$Presence.at,[ref]$at) -and $now-$at-ge 0 -and $now-$at-le 30000
   $faultFile=Join-Path $DataDir 'resource-fault.json';$previous=$null
   if(Test-Path -LiteralPath $faultFile){
     try{$previous=Get-Content -LiteralPath $faultFile -Raw -Encoding UTF8|ConvertFrom-Json}
     catch{$previous=@{restarts=@('invalid')}}
   }
-  $recovery=Get-WidgetResourceRecovery $previous $Reason $now $Process.PrivateMemorySize64 ([bool]$healthy)
+  # Read again after the identity and recovery-history I/O. Stop immediately
+  # after the last check so persisting the fault cannot race a resumed GUI.
+  $latest=Read-WidgetSupervisorPresence $DataDir
+  if(!$latest){$latest=$Presence}
+  $Process.Refresh()
+  if($Process.HasExited){return $false}
+  $now=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+  $clock=Get-WidgetHeartbeatClock
+  $currentFault=Get-WidgetResourceFault $Process $latest $now $HeartbeatState $clock
+  if($Reason-eq 'heartbeat-timeout' -and $currentFault-ne 'heartbeat-timeout'){return $false}
+  $age=-1L
+  if($HeartbeatState-is [Collections.IDictionary] -and $HeartbeatState.Contains('heartbeatAgeMs')){
+    $age=$HeartbeatState.heartbeatAgeMs
+  }elseif($latest -and $latest.pid-eq $Process.Id){
+    $at=0L
+    if([long]::TryParse([string]$latest.at,[ref]$at)){$age=$now-$at}
+  }
+  $healthy=$age-ge 0 -and $age-le 30000
+  $privateBytes=$Process.PrivateMemorySize64
+  $recovery=Get-WidgetResourceRecovery $previous $Reason $now $privateBytes ([bool]$healthy)
   $action=if($recovery.action-eq 'restart'){'restart-after-cooldown'}else{'disabled-until-manual-open'}
+  Stop-Process -InputObject $Process -ErrorAction Stop
   try{
-    Write-WidgetSupervisorJson $faultFile @{pid=$Process.Id;at=[DateTime]::UtcNow.ToString('o');reason=$Reason;privateBytes=$Process.PrivateMemorySize64;action=$action;restarts=$recovery.restarts}
+    Write-WidgetSupervisorJson $faultFile @{pid=$Process.Id;at=[DateTime]::UtcNow.ToString('o');reason=$Reason;privateBytes=$privateBytes;action=$action;restarts=$recovery.restarts}
   }catch{
     # If recovery history cannot be persisted, stop rather than risk a restart loop.
     $recovery.action='disable'
   }
   if($recovery.action-eq 'disable'){try{Disable-WidgetSupervisor -AppDir $AppDir}catch{}}
-  Stop-Process -Id $Process.Id -ErrorAction Stop
   return [pscustomobject]@{stopped=$true;action=$recovery.action}
 }
 
